@@ -23,7 +23,6 @@
     body {
       margin: 0;
       padding: 0;
-      min-height: 100%;
       font-family: "SF Pro Display", "SF Pro Text", "Segoe UI", Arial, sans-serif;
       color: var(--text-main);
       background:
@@ -36,7 +35,6 @@
       max-width: 1600px;
       margin: 0 auto;
       padding: 20px;
-      min-height: 100vh;
       display: flex;
       gap: 18px;
       align-items: flex-start;
@@ -3962,11 +3960,21 @@
   </script>
   <script>
     (function () {
+      var lastSentHeight = 0;
+
       function sendHeightToParent() {
-        var h = Math.max(
-          document.body ? document.body.scrollHeight : 0,
-          document.documentElement ? document.documentElement.scrollHeight : 0
-        );
+        var shell = document.querySelector('.shell');
+        var rawHeight = shell
+          ? shell.getBoundingClientRect().height
+          : Math.max(
+              document.body ? document.body.scrollHeight : 0,
+              document.documentElement ? document.documentElement.scrollHeight : 0
+            );
+        var h = Math.ceil(rawHeight);
+
+        if (!h || Math.abs(h - lastSentHeight) < 2) return;
+        lastSentHeight = h;
+
         if (window.parent && window.parent !== window) {
           window.parent.postMessage({ type: 'calcHeight', height: h }, '*');
         }
@@ -3977,7 +3985,12 @@
       document.addEventListener('click', function () {
         setTimeout(sendHeightToParent, 60);
       });
-      setInterval(sendHeightToParent, 600);
+      if (window.ResizeObserver) {
+        var ro = new ResizeObserver(function () {
+          sendHeightToParent();
+        });
+        ro.observe(document.body);
+      }
     })();
   </script>
 </body>
