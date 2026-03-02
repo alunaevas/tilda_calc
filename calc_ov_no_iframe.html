@@ -2346,11 +2346,11 @@
     drawAxesAndGrid();
   }
 
-  addProcessBtn.addEventListener('click', addProcessStage);
-  exportPdfBtn.addEventListener('click', exportDiagramPdf);
-  resetBtn.addEventListener('click', resetForm);
-  canvas.addEventListener('mousemove', handleCanvasHover);
-  canvas.addEventListener('mouseleave', hideTooltip);
+  addProcessBtn.onclick = addProcessStage;
+  exportPdfBtn.onclick = exportDiagramPdf;
+  resetBtn.onclick = resetForm;
+  canvas.onmousemove = handleCanvasHover;
+  canvas.onmouseleave = hideTooltip;
 
   createRows();
   drawAxesAndGrid();
@@ -3061,7 +3061,7 @@
         input.addEventListener("input", recalc);
         input.addEventListener("change", recalc);
       });
-      els.exportPdfBtn.addEventListener("click", exportPdf);
+      els.exportPdfBtn.onclick = exportPdf;
 
       recalc();
     })();
@@ -3899,7 +3899,7 @@
         el.addEventListener("input", recalc);
         el.addEventListener("change", recalc);
       });
-      els.exportPdfBtn.addEventListener("click", exportPdf);
+      els.exportPdfBtn.onclick = exportPdf;
 
       recalc();
     })();
@@ -3961,15 +3961,36 @@
   <script>
     (function () {
       var lastSentHeight = 0;
+      var sendTimer = null;
+
+      function scheduleHeightSend(delay) {
+        if (sendTimer) {
+          clearTimeout(sendTimer);
+        }
+        sendTimer = setTimeout(sendHeightToParent, typeof delay === 'number' ? delay : 80);
+      }
 
       function sendHeightToParent() {
+        var moduleHost = document.getElementById('moduleHost');
         var shell = document.querySelector('.shell');
-        var rawHeight = shell
+        var shellStyles = shell ? window.getComputedStyle(shell) : null;
+        var shellPadTop = shellStyles ? parseFloat(shellStyles.paddingTop || '0') : 0;
+        var shellPadBottom = shellStyles ? parseFloat(shellStyles.paddingBottom || '0') : 0;
+
+        var moduleHeight = moduleHost
+          ? Math.max(moduleHost.scrollHeight, moduleHost.getBoundingClientRect().height)
+          : 0;
+
+        var shell = document.querySelector('.shell');
+        var fallbackHeight = shell
           ? shell.getBoundingClientRect().height
           : Math.max(
               document.body ? document.body.scrollHeight : 0,
               document.documentElement ? document.documentElement.scrollHeight : 0
             );
+        var rawHeight = moduleHeight > 0
+          ? (moduleHeight + shellPadTop + shellPadBottom)
+          : fallbackHeight;
         var h = Math.ceil(rawHeight);
 
         if (!h || Math.abs(h - lastSentHeight) < 2) return;
@@ -3981,15 +4002,26 @@
       }
 
       window.addEventListener('load', sendHeightToParent);
-      window.addEventListener('resize', sendHeightToParent);
-      document.addEventListener('click', function () {
-        setTimeout(sendHeightToParent, 60);
+      window.addEventListener('resize', function () {
+        scheduleHeightSend(60);
       });
-      if (window.ResizeObserver) {
-        var ro = new ResizeObserver(function () {
+      window.addEventListener('message', function (e) {
+        if (e && e.data && e.data.type === 'requestCalcHeight') {
           sendHeightToParent();
+        }
+      });
+
+      var moduleHost = document.getElementById('moduleHost');
+      if (window.MutationObserver && moduleHost) {
+        var mo = new MutationObserver(function () {
+          scheduleHeightSend(80);
         });
-        ro.observe(document.body);
+        mo.observe(moduleHost, {
+          childList: true,
+          subtree: true,
+          attributes: true,
+          characterData: false
+        });
       }
     })();
   </script>
