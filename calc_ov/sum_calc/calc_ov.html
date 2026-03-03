@@ -91,6 +91,8 @@
       border: 1px solid rgba(255, 255, 255, 0.8);
       border-radius: 16px;
       padding: 12px 14px;
+      position: relative;
+      overflow: hidden;
       text-align: left;
       font-size: 14px;
       font-weight: 600;
@@ -112,6 +114,51 @@
       background: linear-gradient(180deg, var(--tab-active-start) 0%, var(--tab-active-end) 100%);
       border-color: rgba(255, 255, 255, 0.62);
       box-shadow: 0 14px 30px rgba(41, 99, 186, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    }
+
+    .tab-assistant {
+      color: #4d3552;
+      border-color: rgba(255, 214, 225, 0.92);
+      background: linear-gradient(180deg, rgba(255, 247, 250, 0.92) 0%, rgba(255, 232, 238, 0.8) 100%);
+      box-shadow: 0 10px 24px rgba(145, 72, 103, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    }
+
+    .tab-assistant::before {
+      content: "";
+      position: absolute;
+      right: -24px;
+      top: -20px;
+      width: 84px;
+      height: 84px;
+      border-radius: 50%;
+      background: rgba(255, 135, 144, 0.2);
+      pointer-events: none;
+    }
+
+    .tab-assistant::after {
+      content: "";
+      position: absolute;
+      top: 5px;
+      left: 12px;
+      width: 66%;
+      height: 38%;
+      border-radius: 999px;
+      background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.45) 0%, rgba(255, 255, 255, 0) 80%);
+      pointer-events: none;
+      mix-blend-mode: screen;
+    }
+
+    .tab-assistant:hover {
+      box-shadow: 0 12px 26px rgba(145, 72, 103, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    }
+
+    .tab-assistant.active {
+      color: #ffffff;
+      border-color: rgba(255, 197, 208, 0.72);
+      background:
+        radial-gradient(circle at 87% 12%, rgba(255, 190, 175, 0.38) 0 25%, rgba(255, 190, 175, 0) 26%),
+        linear-gradient(135deg, #c6175d 0%, #ea3e63 52%, #ff6a3c 100%);
+      box-shadow: 0 14px 30px rgba(186, 64, 101, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.28);
     }
 
     .content {
@@ -201,10 +248,10 @@
       <p>С помощью расчетных модулей можно выполнять расчеты и выгружить отчеты для вставки в проектную и рабочую документацию</p>
 
       <nav class="tabs" aria-label="Вкладки расчетов">
+        <button class="tab tab-assistant" data-target="hvacgpt" type="button">Ассистент инженера ОВ</button>
         <button class="tab active" data-target="id-diagram" type="button">Построение процессов на id-диаграмме</button>
         <button class="tab" data-target="parking-sp300" type="button">Расчет воздухообмена автостоянки по СП300.1325800.2017</button>
         <button class="tab" data-target="parking-ontp" type="button">Расчет воздухообмена на автостоянке по ОНТП-01-91</button>
-        <button class="tab" data-target="hvacgpt" type="button">Ассистент инженера ОВ</button>
       </nav>
     </aside>
 
