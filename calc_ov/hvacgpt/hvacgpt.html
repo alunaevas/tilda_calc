@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ассистент инженера ОВ</title>
+  <style>
+    /* === GPTHVAC | Chat UI === */
+    .gpt-chat {
+      max-width: 900px;
+      margin: 0 auto;
+      height: 90vh;
+      background: #ffffff;
+      border-radius: 14px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, .08);
+      display: flex;
+      flex-direction: column;
+      font-family: Inter, Arial, sans-serif;
+    }
+
+    /* === Header === */
+    .gpt-header {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 20px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .gpt-header img.logo {
+      height: 60px;
+    }
+
+    .gpt-header span {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    /* === Sticker === */
+    .gpt-sticker {
+      position: absolute;
+      top: 15px;
+      right: 50px;
+      height: 90px;
+      width: auto;
+      pointer-events: none;
+    }
+
+    /* === Messages === */
+    .gpt-messages {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .gpt-msg {
+      max-width: 75%;
+      padding: 12px 14px;
+      border-radius: 10px;
+      font-size: 14px;
+      line-height: 1.4;
+      white-space: pre-wrap;
+    }
+
+    .gpt-user {
+      align-self: flex-end;
+      background: #AD1C42;
+      color: #fff;
+    }
+
+    .gpt-bot {
+      align-self: flex-start;
+      background: #f2f2f2;
+      color: #000;
+    }
+
+    .gpt-sys {
+      align-self: flex-start;
+      background: #fff7f7;
+      border: 1px solid #ffd3db;
+      color: #5a0f1f;
+    }
+
+    /* HTML inside response */
+    .gpt-bot p {
+      margin: 6px 0;
+    }
+
+    .gpt-bot ul,
+    .gpt-bot ol {
+      margin: 6px 0 6px 18px;
+      padding: 0;
+    }
+
+    .gpt-bot li {
+      margin: 4px 0;
+    }
+
+    .gpt-bot strong {
+      font-weight: 700;
+    }
+
+    .gpt-bot em {
+      font-style: italic;
+    }
+
+    .gpt-bot code {
+      background: #eaeaea;
+      padding: 2px 6px;
+      border-radius: 6px;
+    }
+
+    /* === Input === */
+    .gpt-input {
+      display: flex;
+      gap: 10px;
+      padding: 16px;
+      border-top: 1px solid #eee;
+    }
+
+    .gpt-input textarea {
+      flex: 1;
+      resize: none;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      padding: 10px;
+      font-size: 14px;
+      min-height: 44px;
+    }
+
+    .gpt-input button {
+      background: #AD1C42;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 0 20px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .gpt-input button:hover {
+      background: #8f1736;
+    }
+
+    .gpt-input button:disabled {
+      opacity: .6;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <!-- Markdown -> HTML -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <!-- HTML sanitize -->
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+
+  <div class="gpt-chat">
+    <div class="gpt-header">
+      <a href="https://osnovaprof.ru" target="_blank" rel="noopener">
+        <img class="logo"
+             src="https://static.tildacdn.com/tild3933-6438-4633-b733-306266393934/logo_mail.png"
+             alt="Логотип">
+      </a>
+      GPTHVAC
+      <img class="gpt-sticker"
+           src="https://optim.tildacdn.com/tild3130-3735-4330-a337-316532386434/-/resize/812x/-/format/webp/GPT_HVAC.png.webp"
+           alt="Sticker">
+    </div>
+
+    <div class="gpt-messages" id="gptMessages">
+      <div class="gpt-msg gpt-bot">
+        <p>Добро пожаловать в GPTHVAC.</p>
+        <p>Я помогаю находить ответы по отоплению, вентиляции, кондиционированию и тепловым сетям. Отвечаю на вопросы на основе загруженной нормативной и справочной базы.</p>
+        <p>Задайте ваш вопрос.</p>
+      </div>
+    </div>
+
+    <div class="gpt-input">
+      <textarea id="gptInput" placeholder="Введите сообщение..."></textarea>
+      <button id="gptBtn" onclick="gptSend()">Отправить</button>
+    </div>
+  </div>
+
+  <script>
+    const GPT_WEBHOOK_URL = "https://frostily-tough-naiad.cloudpub.ru/webhook/59a78cd8-1d49-4cee-819d-b42747829cab";
+
+    marked.setOptions({ gfm: true, breaks: true });
+
+    function renderMarkdownSafe(md) {
+      return DOMPurify.sanitize(marked.parse(md || ""));
+    }
+
+    function addMsg(text, cls) {
+      const chat = document.getElementById('gptMessages');
+      const el = document.createElement('div');
+      el.className = 'gpt-msg ' + cls;
+      el.textContent = text;
+      chat.appendChild(el);
+      chat.scrollTop = chat.scrollHeight;
+      return el;
+    }
+
+    function setLoading(isLoading) {
+      const btn = document.getElementById('gptBtn');
+      btn.disabled = isLoading;
+      btn.textContent = isLoading ? "Отправка..." : "Отправить";
+    }
+
+    function extractBotText(data) {
+      if (!data) return "Пустой ответ от сервера.";
+      if (typeof data === "string") return data;
+      return data.text || data.answer || data.message || JSON.stringify(data, null, 2);
+    }
+
+    async function gptSend() {
+      const input = document.getElementById('gptInput');
+      const text = input.value.trim();
+      if (!text) return;
+
+      addMsg(text, 'gpt-user');
+      input.value = '';
+
+      const thinking = addMsg("Думаю...", 'gpt-bot');
+      setLoading(true);
+
+      try {
+        const res = await fetch(GPT_WEBHOOK_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text: text,
+            source: "tilda_t123",
+            ts: new Date().toISOString()
+          })
+        });
+
+        const data = res.headers.get("content-type")?.includes("json")
+          ? await res.json()
+          : await res.text();
+
+        thinking.innerHTML = renderMarkdownSafe(extractBotText(data));
+      } catch (e) {
+        thinking.textContent = "Ошибка отправки запроса.";
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    // Enter = send
+    document.addEventListener("keydown", (e) => {
+      const ta = document.getElementById("gptInput");
+      if (document.activeElement === ta && e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        gptSend();
+      }
+    });
+  </script>
+</body>
+</html>
