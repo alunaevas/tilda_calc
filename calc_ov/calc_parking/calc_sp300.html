@@ -328,7 +328,7 @@
       </div>
 
       <div class="actions">
-        <button type="button" id="exportPdfBtn">Выгрузить в pdf</button>
+        <button type="button" id="exportPdfBtn">Выгрузить отчет</button>
       </div>
 
       <p class="caption">Расчет выполнен по формулам 6.1-6.8 СП300.1325800.2017.</p>
@@ -699,7 +699,7 @@
           alert("Не удалось сформировать PDF. Проверьте подключение к интернету и повторите.");
         }).finally(function () {
           els.exportPdfBtn.disabled = false;
-          els.exportPdfBtn.textContent = "Выгрузить в pdf";
+          els.exportPdfBtn.textContent = "Выгрузить отчет";
         });
       }
 
