@@ -5,40 +5,69 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Ассистент инженера ОВ</title>
   <style>
-    /* === GPTHVAC | Chat UI === */
-    .gpt-chat {
-      max-width: 900px;
+    #allrecords .hvac-app {
+      max-width: 1080px;
       margin: 0 auto;
-      height: 90vh;
-      background: #ffffff;
-      border-radius: 14px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, .08);
-      display: flex;
-      flex-direction: column;
-      font-family: Inter, Arial, sans-serif;
+      padding: 26px;
+      font-family: "SF Pro Display", "Segoe UI", Arial, sans-serif;
+      color: #12233b;
+      background:
+        radial-gradient(120% 90% at 0% 0%, rgba(165, 219, 255, 0.28) 0%, rgba(165, 219, 255, 0) 55%),
+        radial-gradient(110% 100% at 100% 0%, rgba(190, 200, 255, 0.2) 0%, rgba(190, 200, 255, 0) 58%),
+        rgba(243, 247, 252, 0.54);
+      border: 1px solid rgba(255, 255, 255, 0.58);
+      border-radius: 24px;
+      box-shadow: 0 20px 60px rgba(21, 55, 98, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+      -webkit-backdrop-filter: blur(20px) saturate(150%);
+      backdrop-filter: blur(20px) saturate(150%);
+      box-sizing: border-box;
+      position: relative;
+      top: 10px;
+      overflow: hidden;
     }
 
-    /* === Header === */
-    .gpt-header {
+    #allrecords .hvac-app::before {
+      content: "";
+      position: absolute;
+      inset: -120px -40px auto auto;
+      width: 340px;
+      height: 340px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0) 68%);
+      pointer-events: none;
+    }
+
+    #allrecords .gpt-chat {
+      min-height: 760px;
+      background: transparent;
+      border: 0;
+      border-radius: 0;
+      box-shadow: none;
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #allrecords .gpt-header {
       position: relative;
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 16px 20px;
-      border-bottom: 1px solid #eee;
+      padding: 16px 18px;
+      border-bottom: 1px solid rgba(147, 176, 212, 0.35);
     }
 
-    .gpt-header img.logo {
+    #allrecords .gpt-header img.logo {
       height: 60px;
     }
 
-    .gpt-header span {
+    #allrecords .gpt-header span {
       font-size: 18px;
       font-weight: 600;
     }
 
-    /* === Sticker === */
-    .gpt-sticker {
+    #allrecords .gpt-sticker {
       position: absolute;
       top: 15px;
       right: 50px;
@@ -47,108 +76,186 @@
       pointer-events: none;
     }
 
-    /* === Messages === */
-    .gpt-messages {
+    #allrecords .gpt-messages {
       flex: 1;
-      padding: 20px;
+      padding: 18px;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
       gap: 12px;
+      background: transparent;
     }
 
-    .gpt-msg {
+    #allrecords .gpt-msg {
       max-width: 75%;
-      padding: 12px 14px;
-      border-radius: 10px;
+      padding: 12px 13px;
+      border-radius: 12px;
       font-size: 14px;
       line-height: 1.4;
       white-space: pre-wrap;
+      border: 1px solid rgba(255, 255, 255, 0.62);
+      -webkit-backdrop-filter: blur(12px) saturate(150%);
+      backdrop-filter: blur(12px) saturate(150%);
     }
 
-    .gpt-user {
+    #allrecords .gpt-user {
       align-self: flex-end;
-      background: #AD1C42;
+      background:
+        radial-gradient(130% 110% at 15% 0%, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0) 48%),
+        linear-gradient(165deg, rgba(100, 170, 255, 0.55) 0%, rgba(55, 120, 215, 0.58) 100%);
+      box-shadow: 0 12px 24px rgba(41, 94, 170, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.44);
       color: #fff;
     }
 
-    .gpt-bot {
+    #allrecords .gpt-bot {
       align-self: flex-start;
-      background: #f2f2f2;
-      color: #000;
+      background:
+        radial-gradient(140% 115% at 20% 0%, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0) 56%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.66) 0%, rgba(236, 244, 255, 0.5) 100%);
+      color: #12233b;
+      box-shadow: 0 8px 20px rgba(56, 93, 136, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.5);
     }
 
-    .gpt-sys {
+    #allrecords .gpt-sys {
       align-self: flex-start;
-      background: #fff7f7;
-      border: 1px solid #ffd3db;
+      background:
+        radial-gradient(140% 115% at 20% 0%, rgba(255, 255, 255, 0.56) 0%, rgba(255, 255, 255, 0) 56%),
+        linear-gradient(180deg, rgba(255, 243, 246, 0.72) 0%, rgba(255, 233, 238, 0.52) 100%);
+      border: 1px solid rgba(255, 210, 222, 0.72);
       color: #5a0f1f;
+      box-shadow: 0 8px 20px rgba(129, 66, 85, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.5);
     }
 
-    /* HTML inside response */
-    .gpt-bot p {
+    #allrecords .gpt-bot p {
       margin: 6px 0;
     }
 
-    .gpt-bot ul,
-    .gpt-bot ol {
+    #allrecords .gpt-bot ul,
+    #allrecords .gpt-bot ol {
       margin: 6px 0 6px 18px;
       padding: 0;
     }
 
-    .gpt-bot li {
+    #allrecords .gpt-bot li {
       margin: 4px 0;
     }
 
-    .gpt-bot strong {
+    #allrecords .gpt-bot strong {
       font-weight: 700;
     }
 
-    .gpt-bot em {
+    #allrecords .gpt-bot em {
       font-style: italic;
     }
 
-    .gpt-bot code {
+    #allrecords .gpt-bot code {
       background: #eaeaea;
       padding: 2px 6px;
       border-radius: 6px;
     }
 
-    /* === Input === */
-    .gpt-input {
+    #allrecords .gpt-input {
       display: flex;
       gap: 10px;
       padding: 16px;
-      border-top: 1px solid #eee;
+      border-top: 1px solid rgba(147, 176, 212, 0.35);
     }
 
-    .gpt-input textarea {
+    #allrecords .gpt-input textarea {
       flex: 1;
       resize: none;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      padding: 10px;
+      border-radius: 11px;
+      border: 1px solid rgba(147, 176, 212, 0.54);
+      padding: 10px 11px;
+      background: rgba(255, 255, 255, 0.7);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
       font-size: 14px;
       min-height: 44px;
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
     }
 
-    .gpt-input button {
-      background: #AD1C42;
+    #allrecords .gpt-input textarea:focus {
+      border-color: rgba(41, 126, 221, 0.9);
+      background: rgba(255, 255, 255, 0.86);
+      box-shadow: 0 0 0 3px rgba(50, 133, 227, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.74);
+    }
+
+    #allrecords .gpt-input button {
+      border: 1px solid rgba(255, 255, 255, 0.64);
+      border-radius: 12px;
+      background:
+        radial-gradient(120% 100% at 12% 0%, rgba(255, 255, 255, 0.52) 0%, rgba(255, 255, 255, 0) 54%),
+        linear-gradient(165deg, rgba(91, 157, 246, 0.68) 0%, rgba(51, 112, 205, 0.72) 100%);
       color: #fff;
-      border: none;
-      border-radius: 8px;
       padding: 0 20px;
-      font-weight: 500;
+      font-weight: 600;
+      font-size: 14px;
       cursor: pointer;
+      box-shadow: 0 12px 24px rgba(41, 94, 170, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.44);
+      -webkit-backdrop-filter: blur(14px) saturate(160%);
+      backdrop-filter: blur(14px) saturate(160%);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
 
-    .gpt-input button:hover {
-      background: #8f1736;
+    #allrecords .gpt-input button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 15px 26px rgba(41, 94, 170, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.5);
     }
 
-    .gpt-input button:disabled {
+    #allrecords .gpt-input button:disabled {
       opacity: .6;
       cursor: not-allowed;
+      transform: none;
+      box-shadow: 0 8px 22px rgba(20, 101, 195, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    }
+
+    @media (max-width: 780px) {
+      #allrecords .hvac-app {
+        padding: 18px;
+        border-radius: 18px;
+      }
+
+      #allrecords .gpt-chat {
+        min-height: 78vh;
+      }
+
+      #allrecords .gpt-sticker {
+        height: 72px;
+        right: 18px;
+      }
+
+      #allrecords .gpt-input button {
+        min-height: 46px;
+        font-size: 16px;
+      }
+    }
+
+    @media (max-width: 430px) {
+      #allrecords .hvac-app {
+        padding: 14px;
+        border-radius: 14px;
+      }
+
+      #allrecords .gpt-header {
+        padding-right: 12px;
+      }
+
+      #allrecords .gpt-header img.logo {
+        height: 48px;
+      }
+
+      #allrecords .gpt-sticker {
+        display: none;
+      }
+
+      #allrecords .gpt-input {
+        flex-direction: column;
+      }
+
+      #allrecords .gpt-input button {
+        width: 100%;
+      }
     }
   </style>
 </head>
@@ -158,30 +265,34 @@
   <!-- HTML sanitize -->
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
 
-  <div class="gpt-chat">
-    <div class="gpt-header">
-      <a href="https://osnovaprof.ru" target="_blank" rel="noopener">
-        <img class="logo"
-             src="https://static.tildacdn.com/tild3933-6438-4633-b733-306266393934/logo_mail.png"
-             alt="Логотип">
-      </a>
-      GPTHVAC
-      <img class="gpt-sticker"
-           src="https://optim.tildacdn.com/tild3130-3735-4330-a337-316532386434/-/resize/812x/-/format/webp/GPT_HVAC.png.webp"
-           alt="Sticker">
-    </div>
+  <div id="allrecords">
+    <div class="hvac-app">
+      <div class="gpt-chat">
+        <div class="gpt-header">
+          <a href="https://osnovaprof.ru" target="_blank" rel="noopener">
+            <img class="logo"
+                 src="https://static.tildacdn.com/tild3933-6438-4633-b733-306266393934/logo_mail.png"
+                 alt="Логотип">
+          </a>
+          GPTHVAC
+          <img class="gpt-sticker"
+               src="https://optim.tildacdn.com/tild3130-3735-4330-a337-316532386434/-/resize/812x/-/format/webp/GPT_HVAC.png.webp"
+               alt="Sticker">
+        </div>
 
-    <div class="gpt-messages" id="gptMessages">
-      <div class="gpt-msg gpt-bot">
-        <p>Добро пожаловать в GPTHVAC.</p>
-        <p>Я помогаю находить ответы по отоплению, вентиляции, кондиционированию и тепловым сетям. Отвечаю на вопросы на основе загруженной нормативной и справочной базы.</p>
-        <p>Задайте ваш вопрос.</p>
+        <div class="gpt-messages" id="gptMessages">
+          <div class="gpt-msg gpt-bot">
+            <p>Добро пожаловать в GPTHVAC.</p>
+            <p>Я помогаю находить ответы по отоплению, вентиляции, кондиционированию и тепловым сетям. Отвечаю на вопросы на основе загруженной нормативной и справочной базы.</p>
+            <p>Задайте ваш вопрос.</p>
+          </div>
+        </div>
+
+        <div class="gpt-input">
+          <textarea id="gptInput" placeholder="Введите сообщение..."></textarea>
+          <button id="gptBtn" onclick="gptSend()">Отправить</button>
+        </div>
       </div>
-    </div>
-
-    <div class="gpt-input">
-      <textarea id="gptInput" placeholder="Введите сообщение..."></textarea>
-      <button id="gptBtn" onclick="gptSend()">Отправить</button>
     </div>
   </div>
 
