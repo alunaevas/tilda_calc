@@ -276,7 +276,7 @@
           </select>
         </div>
         <div class="grid">
-          <div class="label">ПДК СО, мг/м3</div>
+          <div class="label">ПДК СО, мг/м³</div>
           <input class="field input-yellow" id="pdk" type="number" step="any" value="20" />
         </div>
       </div>
@@ -469,6 +469,7 @@
           "<p class='eq'>G<sub>CO</sub> = (" + fmt(d.H6, 2) + " · " + fmt(d.A6, 2) + ") · " + fmt(d.N6, 2) + " = <span class='num'>" + fmt(d.P6, 2) + " г/ч</span></p>" +
           "<p><b>6.8</b> Требуемый воздухообмен:</p>" +
           "<p class='eq'>V<sub>a</sub> = 1000·G<sub>CO</sub> / (C<sub>доп</sub> - C<sub>пр</sub>) · k<sub>з</sub></p>" +
+          "<p class='eq'>V<sub>a</sub> = 1000·" + fmt(d.P6, 2) + " / (" + fmt(d.C3, 2) + " - 0,00) · 1,25 = <span class='num'>" + fmt(d.R6raw, 2) + " м³/ч</span></p>" +
           "<p class='eq'>В расчете принято: C<sub>пр</sub> = 0, k<sub>з</sub> = 1,25; тогда L = 1000·G<sub>CO</sub>/ПДК · 1,25</p>" +
           "<p class='eq'>L = 1000·" + fmt(d.P6, 2) + "/" + fmt(d.C3, 2) + " · 1,25 = " + fmt(d.R6raw, 2) + " → округление вверх до десятков = <span class='num'>" + fmt(d.R6, 0) + " м³/ч</span></p>" +
           "<div class='blk'><p><b>Итог:</b> Требуемый воздухообмен L = <span class='num'>" + fmt(d.R6, 0) + " м³/ч</span>.</p></div>" +

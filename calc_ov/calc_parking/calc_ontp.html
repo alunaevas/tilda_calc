@@ -693,6 +693,8 @@
           "<p><b>3.3.</b> Расчет объемного воздухообмена по 3 вредностям, м³/ч:</p>" +
           "<p class='eq'>L<sub>j</sub> = 3600 · 1000 · M<sub>j</sub> / (C<sub>выт,j</sub> - C<sub>пр,j</sub>)</p>" +
           "<p class='eq'>По CO: L = 3600 · 1000 · " + fmtComma(d.B5, 4) + " / (" + fmtComma(d.D3, 1) + " - " + fmtComma(d.G3, 1) + ") = <span class='num'>" + fmtComma(d.B8, 0) + " м³/ч</span></p>" +
+          "<p class='eq'>Дополнительно (форма записи из методики): V<sub>a</sub> = 1000 · G<sub>CO</sub> / (C<sub>доп</sub> - C<sub>пр</sub>) · k<sub>з</sub></p>" +
+          "<p class='eq'>При G<sub>CO</sub> = 3600 · M<sub>CO</sub> = 3600 · " + fmtComma(d.B5, 4) + " = " + fmtComma(3600 * d.B5, 1) + " г/ч, k<sub>з</sub> = 1: V<sub>a</sub> = 1000 · " + fmtComma(3600 * d.B5, 1) + " / (" + fmtComma(d.D3, 1) + " - " + fmtComma(d.G3, 1) + ") · 1 = <span class='num'>" + fmtComma(d.B8, 0) + " м³/ч</span></p>" +
           "<p class='eq'>По CH: L = 3600 · 1000 · " + fmtComma(d.B6, 4) + " / (" + fmtComma(d.E3, 1) + " - 0,0) = <span class='num'>" + fmtComma(d.B9, 0) + " м³/ч</span></p>" +
           "<p class='eq'>По NOx: L = 3600 · 1000 · " + fmtComma(d.B7, 4) + " / (" + fmtComma(d.F3, 1) + " - 0,0) = <span class='num'>" + fmtComma(d.B10, 0) + " м³/ч</span></p>" +
           "<p><b>3.4.</b> Выбор наибольшего значения воздухообмена:</p>" +
