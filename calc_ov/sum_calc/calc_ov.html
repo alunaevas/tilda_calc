@@ -250,6 +250,7 @@
       <nav class="tabs" aria-label="Вкладки расчетов">
         <button class="tab tab-assistant" data-target="hvacgpt" type="button">Ассистент инженера ОВ</button>
         <button class="tab active" data-target="id-diagram" type="button">Построение процессов на id-диаграмме воздуха</button>
+        <button class="tab" data-target="ukrup-teplo" type="button">Укрупненный расчет тепловой нагрузки</button>
         <button class="tab" data-target="parking-sp300" type="button">Расчет воздухообмена автостоянки по СП300.2017</button>
         <button class="tab" data-target="parking-ontp" type="button">Расчет воздухообмена автостоянки по ОНТП-01-91</button>
       </nav>
@@ -261,6 +262,14 @@
           src="../id-diagramma/id-diagramma.html"
           title="i-d диаграмма"
           loading="eager"
+        ></iframe>
+      </section>
+
+      <section class="panel" id="ukrup-teplo" aria-label="Укрупненный расчет тепловой нагрузки">
+        <iframe
+          src="../ukrup_teplo/calc_ukrup_teplo.html"
+          title="Укрупненный расчет тепловой нагрузки"
+          loading="lazy"
         ></iframe>
       </section>
 
