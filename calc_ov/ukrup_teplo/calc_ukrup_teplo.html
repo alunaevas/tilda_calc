@@ -935,12 +935,19 @@
         return name.replace(/[\\\\/:*?\"<>|]/g, "_").slice(0, 80);
       }
 
+      function getCurrentObjectName() {
+        var name = String((els.objectName && els.objectName.value) || "").trim();
+        if (name) return name;
+        if (reportState && reportState.objectName) return String(reportState.objectName).trim();
+        return "";
+      }
+
       function buildReportHtml(mode) {
         if (!reportState) return "";
         mode = mode || "docx";
         var isPdf = mode === "pdf";
         var title = "Укрупненные показатели потребления тепла";
-        var objectLine = "Объект: " + (reportState.objectName || "Без названия");
+        var objectLine = "Объект: " + (getCurrentObjectName() || "Без названия");
         var createdAtLine = "Дата и время создания: " + new Date().toLocaleString("ru-RU", {
           day: "2-digit",
           month: "2-digit",
@@ -1125,7 +1132,7 @@
               left -= pdfH;
             }
 
-            pdf.save(fileSafeName(reportState.objectName || "otchet") + ".pdf");
+            pdf.save(fileSafeName(getCurrentObjectName() || "otchet") + ".pdf");
             document.body.removeChild(tmp);
           });
         });
@@ -1252,7 +1259,7 @@
                 }),
                 new d.Paragraph({
                   spacing: { before: 0, after: 80 },
-                  children: [textRun("Объект: " + (reportState.objectName || "Без названия"), true, "111111")]
+                  children: [textRun("Объект: " + (getCurrentObjectName() || "Без названия"), true, "111111")]
                 }),
                 new d.Paragraph({
                   spacing: { before: 0, after: 180 },
@@ -1268,7 +1275,7 @@
           });
 
           return d.Packer.toBlob(doc).then(function (blob) {
-            downloadBlob(blob, fileSafeName(reportState.objectName || "otchet") + ".docx");
+            downloadBlob(blob, fileSafeName(getCurrentObjectName() || "otchet") + ".docx");
           });
         }).catch(function (err) {
           console.error(err);
@@ -1366,6 +1373,8 @@
 
       els.temp.addEventListener('input', recalcAll);
       els.temp.addEventListener('change', recalcAll);
+      els.objectName.addEventListener('input', recalcAll);
+      els.objectName.addEventListener('change', recalcAll);
       els.globalGvsFlow.addEventListener('input', recalcAll);
       els.globalGvsFlow.addEventListener('change', recalcAll);
       els.globalGvsKw.addEventListener('input', recalcAll);
