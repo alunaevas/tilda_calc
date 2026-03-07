@@ -1,0 +1,1354 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Расчет укрупненных показателей потребления тепла жилого здания через n8n</title>
+  <style>
+    #allrecords .teplo-app {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 26px;
+      font-family: "SF Pro Display", "Segoe UI", Arial, sans-serif;
+      color: #12233b;
+      background:
+        radial-gradient(120% 90% at 0% 0%, rgba(165, 219, 255, 0.28) 0%, rgba(165, 219, 255, 0) 55%),
+        radial-gradient(110% 100% at 100% 0%, rgba(190, 200, 255, 0.2) 0%, rgba(190, 200, 255, 0) 58%),
+        rgba(243, 247, 252, 0.54);
+      border: 1px solid rgba(255, 255, 255, 0.58);
+      border-radius: 24px;
+      box-shadow: 0 20px 60px rgba(21, 55, 98, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+      backdrop-filter: blur(20px) saturate(150%);
+      box-sizing: border-box;
+      position: relative;
+      top: 10px;
+      overflow: hidden;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    #allrecords .teplo-app::before {
+      content: "";
+      position: absolute;
+      inset: -120px -40px auto auto;
+      width: 340px;
+      height: 340px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0) 68%);
+      pointer-events: none;
+    }
+
+    #allrecords .app-header h2 {
+      margin: 0 0 8px;
+      font-size: 32px;
+      font-weight: 700;
+      color: #AD1C42;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+      text-wrap: balance;
+    }
+
+    #allrecords .app-header p {
+      margin: 0 0 22px;
+      color: #4b6488;
+      font-size: 15px;
+      max-width: 760px;
+    }
+
+    #allrecords .section-title {
+      margin: 0 0 10px;
+      color: #1f3f67;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    #allrecords .panel {
+      position: relative;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0%, rgba(242, 249, 255, 0.58) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.78);
+      border-radius: 16px;
+      padding: 14px;
+      box-shadow: 0 10px 26px rgba(31, 67, 113, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.64);
+      backdrop-filter: blur(12px);
+      margin-bottom: 14px;
+    }
+
+    #allrecords .panel.panel-open {
+      z-index: 40;
+    }
+
+    #allrecords .grid {
+      display: grid;
+      grid-template-columns: 1fr 250px;
+      gap: 12px;
+      align-items: center;
+    }
+
+    #allrecords .grid + .grid {
+      margin-top: 10px;
+    }
+
+    #allrecords .label {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1f3f67;
+      line-height: 1.35;
+    }
+
+    #allrecords .field {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid rgba(147, 176, 212, 0.54);
+      border-radius: 11px;
+      padding: 10px 11px;
+      background: rgba(255, 255, 255, 0.7);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    }
+
+    #allrecords .field:focus {
+      border-color: rgba(41, 126, 221, 0.9);
+      background: rgba(255, 255, 255, 0.86);
+      box-shadow: 0 0 0 3px rgba(50, 133, 227, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.74);
+    }
+
+    #allrecords .field.readonly {
+      color: #2f4667;
+      background: rgba(237, 245, 255, 0.72);
+      border-color: rgba(147, 176, 212, 0.45);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62);
+    }
+
+    #allrecords .field.input-yellow {
+      background: #fff49a;
+      border-color: #d1be50;
+      font-weight: 700;
+      color: #2b2b2b;
+    }
+
+    #allrecords .city-combo {
+      position: relative;
+      width: 100%;
+      z-index: 45;
+    }
+
+    #allrecords .city-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 260px;
+      gap: 12px;
+      align-items: start;
+    }
+
+    #allrecords .city-cell {
+      display: grid;
+      grid-template-rows: 44px auto;
+      align-items: start;
+    }
+
+    #allrecords .city-cell .label {
+      display: flex;
+      align-items: flex-end;
+      margin-bottom: 0;
+    }
+
+    #allrecords .object-name-block {
+      margin-bottom: 10px;
+    }
+
+    #allrecords .object-name-block .label {
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    #allrecords .city-combo-input {
+      padding-right: 34px;
+    }
+
+    #allrecords .city-toggle {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: 26px;
+      height: 26px;
+      border: none;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.6);
+      color: #355784;
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    #allrecords .city-dropdown {
+      position: absolute;
+      z-index: 20;
+      top: calc(100% + 6px);
+      left: 0;
+      right: 0;
+      border: 1px solid #b7bac0;
+      border-radius: 14px;
+      background: rgba(246, 246, 248, 0.94);
+      box-shadow:
+        0 10px 22px rgba(0, 0, 0, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.7);
+      -webkit-backdrop-filter: blur(6px);
+      backdrop-filter: blur(6px);
+      padding: 5px;
+      max-height: 320px;
+      overflow-y: auto;
+    }
+
+    #allrecords .city-option {
+      width: 100%;
+      border: none;
+      background: transparent;
+      text-align: left;
+      padding: 4px 10px;
+      border-radius: 7px;
+      cursor: pointer;
+      font-size: 14px;
+      color: #2c3038;
+      line-height: 1.25;
+    }
+
+    #allrecords .city-option:hover {
+      background: rgba(79, 132, 212, 0.14);
+    }
+
+    #allrecords .city-option.selected {
+      background: #3f7fd8;
+      color: #fff;
+      font-weight: 700;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    }
+
+    #allrecords .city-option.selected::before {
+      content: "✓ ";
+      font-weight: 800;
+    }
+
+    #allrecords .city-empty {
+      padding: 8px 10px;
+      font-size: 13px;
+      color: #5a6880;
+    }
+
+    #allrecords .inline-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    #allrecords .inline-options label {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+      font-size: 14px;
+      color: #1f3f67;
+      font-weight: 600;
+    }
+
+    #allrecords .office-toggle-row {
+      margin-top: 12px;
+      margin-bottom: 12px;
+    }
+
+    #allrecords .consumers-stack {
+      display: grid;
+      gap: 14px;
+      margin-top: 12px;
+    }
+
+    #allrecords .consumer-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 12px;
+    }
+
+    #allrecords .consumer-tab {
+      border: 1px solid rgba(118, 144, 178, 0.45);
+      border-bottom: none;
+      border-radius: 10px 10px 0 0;
+      background: rgba(255, 255, 255, 0.62);
+      color: #1f3f67;
+      padding: 7px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    #allrecords .consumer-tab.active {
+      background: rgba(82, 139, 219, 0.92);
+      border-color: rgba(62, 120, 202, 0.95);
+      color: #fff;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    }
+
+    #allrecords .consumer-card {
+      border: 1px solid rgba(255, 255, 255, 0.75);
+      border-radius: 14px;
+      padding: 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.58) 0%, rgba(234,244,255,0.48) 100%);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
+    }
+
+    #allrecords .consumer-card.consumer-hidden {
+      display: none;
+    }
+
+    #allrecords .consumer-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    #allrecords .consumer-title {
+      margin: 0;
+      font-size: 16px;
+      color: #1f3f67;
+      font-weight: 700;
+    }
+
+    #allrecords .btn-soft {
+      border: 1px solid rgba(118, 144, 178, 0.45);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.66);
+      color: #1f3f67;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    #allrecords .btn-soft:hover {
+      background: rgba(255, 255, 255, 0.86);
+    }
+
+    #allrecords .btn-export {
+      border-color: rgba(255, 255, 255, 0.7);
+      background: linear-gradient(180deg, #4fa8ff 0%, #1b79db 100%);
+      color: #fff;
+      box-shadow: 0 10px 20px rgba(24, 97, 180, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+      animation: exportPulse 2.2s ease-in-out infinite;
+      transition: transform 0.22s ease, box-shadow 0.22s ease, filter 0.22s ease;
+    }
+
+    #allrecords .btn-export:hover {
+      transform: translateY(-1px) scale(1.01);
+      background: linear-gradient(180deg, #4fa8ff 0%, #1b79db 100%);
+      color: #fff;
+      filter: none;
+      box-shadow: 0 14px 26px rgba(24, 97, 180, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    }
+
+    #allrecords .btn-export:active {
+      transform: translateY(0);
+    }
+
+    @keyframes exportPulse {
+      0% { box-shadow: 0 10px 20px rgba(24, 97, 180, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.35); }
+      50% { box-shadow: 0 13px 24px rgba(24, 97, 180, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.38); }
+      100% { box-shadow: 0 10px 20px rgba(24, 97, 180, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.35); }
+    }
+
+    #allrecords .btn-danger {
+      color: #7a1f34;
+      border-color: rgba(183, 88, 110, 0.45);
+      background: rgba(255, 239, 243, 0.75);
+    }
+
+    #allrecords .result-row {
+      background: linear-gradient(180deg, rgba(226, 247, 234, 0.95) 0%, rgba(213, 241, 223, 0.9) 100%);
+      border: 1px solid rgba(109, 176, 130, 0.55);
+      border-radius: 12px;
+      padding: 10px;
+      margin-top: 10px;
+    }
+
+    #allrecords .result-label {
+      font-weight: 700;
+      color: #12532a;
+    }
+
+    #allrecords .result-field {
+      background: #e0ffd8;
+      border-color: #7abd65;
+      color: #0f4a24;
+      font-size: 20px;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    #allrecords .hidden {
+      display: none;
+    }
+
+    #allrecords .caption {
+      margin-top: 10px;
+      color: #587096;
+      font-size: 13px;
+    }
+
+    #allrecords .status-line {
+      min-height: 20px;
+    }
+
+    #allrecords .status-loading {
+      color: #1b79db;
+      font-weight: 600;
+    }
+
+    #allrecords .status-error {
+      color: #a22145;
+      font-weight: 700;
+    }
+
+    #allrecords .actions {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 10px;
+      align-items: center;
+      margin-top: 12px;
+    }
+
+    @media (max-width: 780px) {
+      #allrecords .teplo-app {
+        padding: 18px;
+        border-radius: 18px;
+      }
+
+      #allrecords .app-header h2 {
+        font-size: 23px;
+        line-height: 1.25;
+      }
+
+      #allrecords .grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      #allrecords .field {
+        font-size: 16px;
+        min-height: 46px;
+        padding: 11px 12px;
+      }
+
+      #allrecords .city-row {
+        grid-template-columns: 1fr;
+      }
+
+      #allrecords .city-cell {
+        grid-template-rows: auto auto;
+      }
+
+      #allrecords .city-option {
+        font-size: 16px;
+      }
+
+      #allrecords .actions {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="allrecords">
+    <div class="teplo-app">
+      <div class="app-header">
+        <h2>Расчет укрупненных показателей потребления тепла жилого здания</h2>
+        <p>Вводите значения только в желтые поля. Расчет выполняется через webhook в n8n, результаты возвращаются обратно в таблицу.</p>
+      </div>
+
+      <div class="panel" id="cityPanel">
+        <h3 class="section-title">Исходные данные</h3>
+        <div class="object-name-block">
+          <div class="label">Название объекта строительства</div>
+          <input class="field input-yellow" id="objectName" type="text" value="Объект строительства" />
+        </div>
+        <div class="city-row">
+          <div class="city-cell">
+            <div class="label">Город строительства</div>
+            <div class="city-combo" id="cityCombo">
+              <input class="field input-yellow city-combo-input" id="city" type="text" placeholder="Начните вводить название города" autocomplete="off" />
+              <button class="city-toggle" id="cityToggle" type="button" aria-label="Открыть список городов">▾</button>
+              <div class="city-dropdown hidden" id="cityDropdown"></div>
+            </div>
+          </div>
+          <div class="city-cell">
+            <div class="label">Температура холодной пятидневки, °С</div>
+            <input class="field input-yellow" id="temp" type="text" inputmode="decimal" />
+          </div>
+        </div>
+        <p class="caption">Можно вводить название с клавиатуры: при совпадении с городом из списка температура подставится автоматически.</p>
+      </div>
+
+      <div class="panel">
+        <div class="grid" style="grid-template-columns:1fr auto;">
+          <h3 class="section-title" style="margin:0;">Потребители (здания/секции)</h3>
+          <button class="btn-soft" id="addConsumerBtn" type="button">+ Добавить потребителя</button>
+        </div>
+        <div class="consumer-tabs" id="consumerTabs"></div>
+        <div class="consumers-stack" id="consumersContainer"></div>
+      </div>
+
+      <div class="panel">
+        <h3 class="section-title">Горячее водоснабжение (ГВС) общее на объект</h3>
+        <div class="grid">
+          <div class="label">Способ задания</div>
+          <div class="inline-options">
+            <label><input type="radio" name="globalGvsMode" id="globalGvsModeFlow" value="flow" checked /> Расход, м³/ч</label>
+            <label><input type="radio" name="globalGvsMode" id="globalGvsModeKw" value="kw" /> Нагрузка, кВт</label>
+          </div>
+        </div>
+        <div class="grid" id="globalGvsFlowRow">
+          <div class="label">Расход воды на ГВС по объекту, м³/ч</div>
+          <input class="field input-yellow" id="globalGvsFlow" type="text" inputmode="decimal" value="2" />
+        </div>
+        <div class="grid hidden" id="globalGvsKwRow">
+          <div class="label">Нагрузка на ГВС по объекту, кВт</div>
+          <input class="field input-yellow" id="globalGvsKw" type="text" inputmode="decimal" value="180" />
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3 class="section-title">Результаты расчета</h3>
+        <div style="overflow-x:auto;">
+          <table id="resultsTable" style="width:100%; border-collapse:collapse; font-size:14px;">
+            <thead>
+              <tr>
+                <th style="text-align:left; padding:8px; border-bottom:1px solid rgba(120,145,177,0.35);">Потребитель</th>
+                <th style="text-align:right; padding:8px; border-bottom:1px solid rgba(120,145,177,0.35);">Площадь, м²</th>
+                <th style="text-align:right; padding:8px; border-bottom:1px solid rgba(120,145,177,0.35);">Отопление, кВт / Гкал/ч</th>
+                <th style="text-align:right; padding:8px; border-bottom:1px solid rgba(120,145,177,0.35);">Вентиляция, кВт / Гкал/ч</th>
+                <th style="text-align:right; padding:8px; border-bottom:1px solid rgba(120,145,177,0.35);">ГВС, кВт / Гкал/ч</th>
+                <th style="text-align:right; padding:8px; border-bottom:1px solid rgba(120,145,177,0.35);">Суммарно, кВт / Гкал/ч</th>
+              </tr>
+            </thead>
+            <tbody id="resultsBody"></tbody>
+          </table>
+        </div>
+        <div class="actions">
+          <select class="field input-yellow" id="reportFormat">
+            <option value="pdf">PDF</option>
+            <option value="docx">DOCX</option>
+          </select>
+          <button class="btn-soft btn-export" id="exportReportBtn" type="button">Выгрузить отчет</button>
+        </div>
+        <div class="caption status-line" id="calcStatus"></div>
+      </div>
+
+      <p class="caption">Расчет производится на основании данных из СП131.13330.2025 "Строительна климатология" и СП124.13330.20212 "Тепловые сети"</p>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var cityData = [{"city": "Майкоп", "temp": -15.0}, {"city": "Катанда", "temp": -37.0}, {"city": "Кош-Агач", "temp": -39.0}, {"city": "Кызыл-Озек", "temp": -31.0}, {"city": "Онгудай", "temp": -35.0}, {"city": "Яйлю", "temp": -22.0}, {"city": "Алейск", "temp": -34.0}, {"city": "Барнаул", "temp": -34.0}, {"city": "Бийск", "temp": -35.0}, {"city": "Змеиногорск", "temp": -35.0}, {"city": "Родино", "temp": -36.0}, {"city": "Рубцовск", "temp": -35.0}, {"city": "Славгород", "temp": -35.0}, {"city": "Солонешное", "temp": -33.0}, {"city": "Тогул", "temp": -33.0}, {"city": "Хабары", "temp": -36.0}, {"city": "Архара", "temp": -36.0}, {"city": "Белогорск", "temp": -35.0}, {"city": "Береговой", "temp": -38.0}, {"city": "Благовещенск", "temp": -32.0}, {"city": "Бомнак", "temp": -41.0}, {"city": "Братолюбовка", "temp": -36.0}, {"city": "Бысса (Февральск)", "temp": -39.0}, {"city": "Дугда", "temp": -42.0}, {"city": "Ерофей Павлович", "temp": -36.0}, {"city": "Завитая", "temp": -34.0}, {"city": "Зея", "temp": -37.0}, {"city": "Норск", "temp": -40.0}, {"city": "Поярково", "temp": -35.0}, {"city": "Свободный", "temp": -37.0}, {"city": "Сковородино", "temp": -39.0}, {"city": "Тында", "temp": -40.0}, {"city": "Усть-Нюкжа", "temp": -42.0}, {"city": "Черняево", "temp": -39.0}, {"city": "Шимановск", "temp": -37.0}, {"city": "Экимчан", "temp": -41.0}, {"city": "Архангельск", "temp": -33.0}, {"city": "Емецк", "temp": -35.0}, {"city": "Каргополь", "temp": -33.0}, {"city": "Койнас", "temp": -40.0}, {"city": "Котлас", "temp": -35.0}, {"city": "Мезень", "temp": -35.0}, {"city": "Онега", "temp": -31.0}, {"city": "Сура", "temp": -39.0}, {"city": "Шенкурск", "temp": -35.0}, {"city": "Астрахань", "temp": -19.0}, {"city": "Верхний Баскунчак", "temp": -23.0}, {"city": "Досанг", "temp": -22.0}, {"city": "Белорецк", "temp": -30.0}, {"city": "Дуван", "temp": -31.0}, {"city": "Зилаир", "temp": -29.0}, {"city": "Мелеуз", "temp": -32.0}, {"city": "Раевский", "temp": -31.0}, {"city": "Уфа", "temp": -31.0}, {"city": "Учалы", "temp": -30.0}, {"city": "Янаул", "temp": -32.0}, {"city": "Белгород", "temp": -22.0}, {"city": "Валуйки", "temp": -22.0}, {"city": "Брянск", "temp": -22.0}, {"city": "Унеча", "temp": -22.0}, {"city": "Бабушкин", "temp": -27.0}, {"city": "Багдарин", "temp": -40.0}, {"city": "Баргузин", "temp": -41.0}, {"city": "Кяхта", "temp": -31.0}, {"city": "Монды", "temp": -31.0}, {"city": "Нижнеангарск", "temp": -33.0}, {"city": "Орлик", "temp": -36.0}, {"city": "Сосново- Озерское", "temp": -35.0}, {"city": "Таксимо", "temp": -44.0}, {"city": "Уакит", "temp": -39.0}, {"city": "Улан-Удэ", "temp": -34.0}, {"city": "Хоринск", "temp": -38.0}, {"city": "Владимир", "temp": -28.0}, {"city": "Муром", "temp": -28.0}, {"city": "Волгоград", "temp": -21.0}, {"city": "Камышин", "temp": -22.0}, {"city": "Котельниково", "temp": -22.0}, {"city": "Новоанненский", "temp": -24.0}, {"city": "Фролово", "temp": -23.0}, {"city": "Эльтон", "temp": -23.0}, {"city": "Бабаево", "temp": -31.0}, {"city": "Вологда", "temp": -32.0}, {"city": "Вытегра", "temp": -32.0}, {"city": "Никольск", "temp": -34.0}, {"city": "Нюксеница", "temp": -34.0}, {"city": "Тотьма", "temp": -33.0}, {"city": "Воронеж", "temp": -23.0}, {"city": "Каменная степь", "temp": -24.0}, {"city": "Ахты", "temp": -12.0}, {"city": "Дербент", "temp": -7.0}, {"city": "Кизляр", "temp": -13.0}, {"city": "Махачкала", "temp": -16.0}, {"city": "Терекли- Мектеб", "temp": -18.0}, {"city": "Дебальцево", "temp": -22.0}, {"city": "Донецк", "temp": -19.0}, {"city": "Теберда", "temp": -13.0}, {"city": "Черкесск", "temp": -17.0}, {"city": "Зашеек", "temp": -31.0}, {"city": "Калевала", "temp": -33.0}, {"city": "Кемь", "temp": -28.0}, {"city": "Олонец", "temp": -30.0}, {"city": "Паданы", "temp": -29.0}, {"city": "Петрозаводск", "temp": -29.0}, {"city": "Реболы", "temp": -32.0}, {"city": "Сортавала", "temp": -28.0}, {"city": "Кемерово", "temp": -37.0}, {"city": "Киселевск", "temp": -31.0}, {"city": "Кондома", "temp": -35.0}, {"city": "Мариинск", "temp": -39.0}, {"city": "Междуреченск", "temp": -36.0}, {"city": "Тайга", "temp": -37.0}, {"city": "Тисуль", "temp": -38.0}, {"city": "Топки", "temp": -36.0}, {"city": "Усть-Кабырза", "temp": -36.0}, {"city": "Центральный рудник", "temp": -32.0}, {"city": "Кильмезь", "temp": -30.0}, {"city": "Киров", "temp": -31.0}, {"city": "Котельнич", "temp": -33.0}, {"city": "Нагорское", "temp": -34.0}, {"city": "Опарино", "temp": -33.0}, {"city": "Вендинга", "temp": -38.0}, {"city": "Весляна", "temp": -38.0}, {"city": "Воркута", "temp": -40.0}, {"city": "Объячево", "temp": -34.0}, {"city": "Петрунь", "temp": -42.0}, {"city": "Печора", "temp": -43.0}, {"city": "Сыктывкар", "temp": -35.0}, {"city": "Троицко- Печорское", "temp": -39.0}, {"city": "Усть-Уса", "temp": -40.0}, {"city": "Усть-Цильма", "temp": -38.0}, {"city": "Усть-Щугор", "temp": -45.0}, {"city": "Ухта", "temp": -38.0}, {"city": "Вохма", "temp": -33.0}, {"city": "Кострома", "temp": -29.0}, {"city": "Чухлома", "temp": -32.0}, {"city": "Шарья", "temp": -33.0}, {"city": "Армавир", "temp": -16.0}, {"city": "Красная Поляна", "temp": -7.0}, {"city": "Краснодар", "temp": -15.0}, {"city": "Кущевская", "temp": -18.0}, {"city": "Новороссийск", "temp": -10.0}, {"city": "Приморско- Ахтарск", "temp": -15.0}, {"city": "Сочи", "temp": -2.0}, {"city": "Тихорецк", "temp": -17.0}, {"city": "Агата", "temp": -52.0}, {"city": "Ачинск", "temp": -35.0}, {"city": "Байкит", "temp": -49.0}, {"city": "Боготол", "temp": -37.0}, {"city": "Богучаны", "temp": -44.0}, {"city": "Ванавара", "temp": -49.0}, {"city": "Вельмо", "temp": -49.0}, {"city": "Верхнеимбатск", "temp": -47.0}, {"city": "Волочанка", "temp": -49.0}, {"city": "Диксон, остров", "temp": -40.0}, {"city": "Енисейск", "temp": -43.0}, {"city": "Игарка", "temp": -48.0}, {"city": "Ирбейское", "temp": -42.0}, {"city": "Канск", "temp": -41.0}, {"city": "Кислокан", "temp": -53.0}, {"city": "Красноярск", "temp": -37.0}, {"city": "Минусинск", "temp": -37.0}, {"city": "Норильск", "temp": -46.0}, {"city": "Советская Речка", "temp": -52.0}, {"city": "Тура", "temp": -52.0}, {"city": "Туруханск", "temp": -47.0}, {"city": "Тутончаны", "temp": -54.0}, {"city": "Хатанга", "temp": -50.0}, {"city": "Ярцево", "temp": -46.0}, {"city": "Ай-Петри", "temp": -16.0}, {"city": "Керчь", "temp": -12.0}, {"city": "Клепинино", "temp": -14.0}, {"city": "Севастополь", "temp": -7.0}, {"city": "Симферополь", "temp": -13.0}, {"city": "Феодосия", "temp": -11.0}, {"city": "Ялта", "temp": -4.0}, {"city": "Курган", "temp": -33.0}, {"city": "Шатрово", "temp": -33.0}, {"city": "Шумиха", "temp": -30.0}, {"city": "Курск", "temp": -22.0}, {"city": "Рыльск", "temp": -21.0}, {"city": "Винницы", "temp": -31.0}, {"city": "Выборг", "temp": -26.0}, {"city": "Николаевское", "temp": -26.0}, {"city": "Новая Ладога", "temp": -27.0}, {"city": "Санкт- Петербург", "temp": -23.0}, {"city": "Тихвин", "temp": -30.0}, {"city": "Елец", "temp": -25.0}, {"city": "Липецк", "temp": -25.0}, {"city": "Луганск", "temp": -23.0}, {"city": "Брохово", "temp": -34.0}, {"city": "Кегали", "temp": -52.0}, {"city": "Коркодон", "temp": -50.0}, {"city": "Магадан", "temp": -27.0}, {"city": "Омсукчан", "temp": -48.0}, {"city": "Палатка", "temp": -34.0}, {"city": "Среднекан", "temp": -49.0}, {"city": "Сусуман", "temp": -53.0}, {"city": "Усть-Омчуг", "temp": -51.0}, {"city": "Йошкар-Ола", "temp": -30.0}, {"city": "Морки", "temp": -30.0}, {"city": "Саранск", "temp": -27.0}, {"city": "Темников", "temp": -27.0}, {"city": "Дмитров", "temp": -26.0}, {"city": "Кашира", "temp": -25.0}, {"city": "Можайск", "temp": -25.0}, {"city": "Москва", "temp": -23.0}, {"city": "Наро-Фоминск", "temp": -25.0}, {"city": "Павловский Посад", "temp": -25.0}, {"city": "Подмосковная", "temp": -25.0}, {"city": "Черусти", "temp": -26.0}, {"city": "Вайда-Губа", "temp": -16.0}, {"city": "Кандалакша", "temp": -30.0}, {"city": "Каневка", "temp": -38.0}, {"city": "Ковдор", "temp": -31.0}, {"city": "Краснощелье", "temp": -34.0}, {"city": "Ловозеро", "temp": -34.0}, {"city": "Мончегорск", "temp": -32.0}, {"city": "Мурманск", "temp": -28.0}, {"city": "Пялица", "temp": -26.0}, {"city": "Святой Нос", "temp": -19.0}, {"city": "Сосновец, остров", "temp": -23.0}, {"city": "Териберка", "temp": -21.0}, {"city": "Умба", "temp": -29.0}, {"city": "Варандей", "temp": -36.0}, {"city": "Индига", "temp": -35.0}, {"city": "Канин Нос", "temp": -23.0}, {"city": "Коткино", "temp": -41.0}, {"city": "Нарьян-Мар", "temp": -38.0}, {"city": "Ходовариха", "temp": -32.0}, {"city": "Хорей-Вер", "temp": -39.0}, {"city": "Арзамас", "temp": -28.0}, {"city": "Выкса", "temp": -27.0}, {"city": "Нижний Новгород", "temp": -26.0}, {"city": "Шахунья", "temp": -31.0}, {"city": "Боровичи", "temp": -28.0}, {"city": "Великий Новгород", "temp": -27.0}, {"city": "Демянск", "temp": -26.0}, {"city": "Барабинск", "temp": -36.0}, {"city": "Болотное", "temp": -36.0}, {"city": "Карасук", "temp": -35.0}, {"city": "Кочки", "temp": -37.0}, {"city": "Купино", "temp": -37.0}, {"city": "Кыштовка", "temp": -38.0}, {"city": "Маслянино", "temp": -37.0}, {"city": "Новосибирск", "temp": -36.0}, {"city": "Татарск", "temp": -35.0}, {"city": "Чулым", "temp": -37.0}, {"city": "Исилькуль", "temp": -35.0}, {"city": "Омск", "temp": -34.0}, {"city": "Тара", "temp": -36.0}, {"city": "Тюкалинск", "temp": -35.0}, {"city": "Черлак", "temp": -34.0}, {"city": "Бугуруслан", "temp": -31.0}, {"city": "Домбаровский", "temp": -30.0}, {"city": "Кувандык", "temp": -29.0}, {"city": "Оренбург", "temp": -29.0}, {"city": "Сорочинск", "temp": -29.0}, {"city": "Ливны", "temp": -25.0}, {"city": "Белинский", "temp": -26.0}, {"city": "Земетчино", "temp": -27.0}, {"city": "Пенза", "temp": -26.0}, {"city": "Березники", "temp": -34.0}, {"city": "Бисер", "temp": -33.0}, {"city": "Кунгур", "temp": -34.0}, {"city": "Ножовка", "temp": -32.0}, {"city": "Пермь", "temp": -32.0}, {"city": "Чердынь", "temp": -35.0}, {"city": "Агзу", "temp": -27.0}, {"city": "Анучино", "temp": -28.0}, {"city": "Астраханка", "temp": -25.0}, {"city": "Богополь", "temp": -20.0}, {"city": "Владивосток", "temp": -22.0}, {"city": "Дальнереченск", "temp": -27.0}, {"city": "Кировский", "temp": -29.0}, {"city": "Красный Яр", "temp": -32.0}, {"city": "Мельничное", "temp": -31.0}, {"city": "Партизанск", "temp": -21.0}, {"city": "Посьет", "temp": -18.0}, {"city": "Преображение", "temp": -16.0}, {"city": "Рудная пристань", "temp": -19.0}, {"city": "Сосуново", "temp": -21.0}, {"city": "Тимирязевский", "temp": -28.0}, {"city": "Чугуевка", "temp": -30.0}, {"city": "Великие Луки", "temp": -25.0}, {"city": "Псков", "temp": -24.0}, {"city": "Гигант", "temp": -19.0}, {"city": "Зимовники", "temp": -21.0}, {"city": "Казанская", "temp": -22.0}, {"city": "Миллерово", "temp": -21.0}, {"city": "Ростов-на-Дону", "temp": -18.0}, {"city": "Таганрог", "temp": -17.0}, {"city": "Павелец", "temp": -25.0}, {"city": "Рязань", "temp": -24.0}, {"city": "Большая Глушица", "temp": -28.0}, {"city": "Самара", "temp": -27.0}, {"city": "Серноводск", "temp": -29.0}, {"city": "Александров Гай", "temp": -25.0}, {"city": "Балашов", "temp": -24.0}, {"city": "Ершов", "temp": -26.0}, {"city": "Ртищево", "temp": -25.0}, {"city": "Саратов", "temp": -23.0}, {"city": "Алдан", "temp": -41.0}, {"city": "Амга", "temp": -54.0}, {"city": "Батамай", "temp": -53.0}, {"city": "Бердигестях", "temp": -53.0}, {"city": "Буяга", "temp": -51.0}, {"city": "Верхоянск", "temp": -57.0}, {"city": "Вилюйск", "temp": -51.0}, {"city": "Витим", "temp": -49.0}, {"city": "Джалинда", "temp": -56.0}, {"city": "Джарджан", "temp": -53.0}, {"city": "Джикимда", "temp": -50.0}, {"city": "Жиганск", "temp": -52.0}, {"city": "Зырянка", "temp": -49.0}, {"city": "Исить", "temp": -49.0}, {"city": "Иэма", "temp": -57.0}, {"city": "Крест-Хальджай", "temp": -54.0}, {"city": "Куйга", "temp": -54.0}, {"city": "Кюсюр", "temp": -52.0}, {"city": "Ленск", "temp": -48.0}, {"city": "Мирный", "temp": -48.0}, {"city": "Нагорный", "temp": -41.0}, {"city": "Нера", "temp": -57.0}, {"city": "Нюрба", "temp": -53.0}, {"city": "Оймякон", "temp": -58.0}, {"city": "Олекминск", "temp": -49.0}, {"city": "Оленек", "temp": -54.0}, {"city": "Охотский Перевоз", "temp": -53.0}, {"city": "Сангары", "temp": -50.0}, {"city": "Саскылах", "temp": -53.0}, {"city": "Среднеколымск", "temp": -49.0}, {"city": "Сунтар", "temp": -50.0}, {"city": "Сухана", "temp": -57.0}, {"city": "Токо", "temp": -49.0}, {"city": "Томмот", "temp": -50.0}, {"city": "Томпо", "temp": -53.0}, {"city": "Туой-Хая", "temp": -49.0}, {"city": "Тяня", "temp": -49.0}, {"city": "Усть-Мая", "temp": -52.0}, {"city": "Усть-Миль", "temp": -50.0}, {"city": "Усть-Мома", "temp": -54.0}, {"city": "Чокурдах", "temp": -45.0}, {"city": "Чульман", "temp": -43.0}, {"city": "Чурапча", "temp": -53.0}, {"city": "Шелагонцы", "temp": -56.0}, {"city": "Эйк", "temp": -52.0}, {"city": "Якутск", "temp": -51.0}, {"city": "Александровск- Сахалинский", "temp": -26.0}, {"city": "Долинск", "temp": -23.0}, {"city": "Корсаков", "temp": -18.0}, {"city": "Курильск", "temp": -14.0}, {"city": "Макаров", "temp": -22.0}, {"city": "Невельск", "temp": -15.0}, {"city": "Ноглики", "temp": -29.0}, {"city": "Онор", "temp": -29.0}, {"city": "Оха", "temp": -29.0}, {"city": "Погиби", "temp": -29.0}, {"city": "Поронайск", "temp": -25.0}, {"city": "Холмск", "temp": -16.0}, {"city": "Южно-Курильск", "temp": -12.0}, {"city": "Южно-Сахалинск", "temp": -21.0}, {"city": "Атымья", "temp": -38.0}, {"city": "Верхотурье", "temp": -34.0}, {"city": "Екатеринбург", "temp": -30.0}, {"city": "Ивдель", "temp": -38.0}, {"city": "Каменск-Уральский", "temp": -31.0}, {"city": "Нижний Тагил", "temp": -33.0}, {"city": "Туринск", "temp": -33.0}, {"city": "Шамары", "temp": -34.0}, {"city": "Владикавказ", "temp": -15.0}, {"city": "Моздок", "temp": -19.0}, {"city": "Вязьма", "temp": -25.0}, {"city": "Смоленск", "temp": -23.0}, {"city": "Арзгир", "temp": -20.0}, {"city": "Дивное", "temp": -19.0}, {"city": "Кисловодск", "temp": -14.0}, {"city": "Минеральные Воды", "temp": -18.0}, {"city": "Невинномысск", "temp": -17.0}, {"city": "Ставрополь", "temp": -18.0}, {"city": "Жердевка", "temp": -25.0}, {"city": "Тамбов", "temp": -25.0}, {"city": "Бугульма", "temp": -29.0}, {"city": "Елабуга", "temp": -30.0}, {"city": "Казань", "temp": -28.0}, {"city": "Чистополь", "temp": -30.0}, {"city": "Чулпаново", "temp": -31.0}, {"city": "Бежецк", "temp": -29.0}, {"city": "Старица", "temp": -26.0}, {"city": "Тверь", "temp": -26.0}, {"city": "Торопец", "temp": -25.0}, {"city": "Александровское", "temp": -43.0}, {"city": "Колпашево", "temp": -40.0}, {"city": "Напас", "temp": -43.0}, {"city": "Пудино", "temp": -39.0}, {"city": "Средний Васюган", "temp": -40.0}, {"city": "Томск", "temp": -37.0}, {"city": "Усть-Озерное", "temp": -42.0}, {"city": "Волово", "temp": -24.0}, {"city": "Тула", "temp": -24.0}, {"city": "Кызыл", "temp": -40.0}, {"city": "Мугур-Аксы", "temp": -32.0}, {"city": "Тоора-Хем", "temp": -41.0}, {"city": "Эрзин", "temp": -41.0}, {"city": "Голышманово", "temp": -34.0}, {"city": "Демьянское", "temp": -38.0}, {"city": "Сладково", "temp": -34.0}, {"city": "Тобольск", "temp": -36.0}, {"city": "Тюмень", "temp": -33.0}, {"city": "Глазов", "temp": -33.0}, {"city": "Ижевск", "temp": -30.0}, {"city": "Сарапул", "temp": -30.0}, {"city": "Канадей", "temp": -28.0}, {"city": "Сурское", "temp": -30.0}, {"city": "Ульяновск", "temp": -29.0}, {"city": "Аян", "temp": -29.0}, {"city": "Байдуков", "temp": -30.0}, {"city": "Бикин", "temp": -29.0}, {"city": "Вяземская", "temp": -28.0}, {"city": "Гвасюги", "temp": -33.0}, {"city": "Джаорэ", "temp": -31.0}, {"city": "Им.П.Осипенко", "temp": -39.0}, {"city": "Комсомольск-на- Амуре", "temp": -35.0}, {"city": "Нелькан", "temp": -47.0}, {"city": "Нижнетамбовское", "temp": -36.0}, {"city": "Николаевск-на- Амуре", "temp": -33.0}, {"city": "Охотск", "temp": -31.0}, {"city": "Советская Гавань", "temp": -24.0}, {"city": "Софийский прииск", "temp": -42.0}, {"city": "Троицкое", "temp": -32.0}, {"city": "Хабаровск", "temp": -29.0}, {"city": "Чегдомын", "temp": -39.0}, {"city": "Чумикан", "temp": -31.0}, {"city": "Абакан", "temp": -36.0}, {"city": "Неожиданный", "temp": -34.0}, {"city": "Шира", "temp": -35.0}, {"city": "Березово", "temp": -41.0}, {"city": "Кондинское", "temp": -37.0}, {"city": "Корлики", "temp": -47.0}, {"city": "Леуши", "temp": -36.0}, {"city": "Няксимволь", "temp": -40.0}, {"city": "Октябрьское", "temp": -39.0}, {"city": "Сосьва", "temp": -43.0}, {"city": "Сургут", "temp": -42.0}, {"city": "Угут", "temp": -41.0}, {"city": "Ханты-Мансийск", "temp": -40.0}, {"city": "Аскания-Нова", "temp": -16.0}, {"city": "Геническ", "temp": -15.0}, {"city": "Херсон", "temp": -16.0}, {"city": "Бреды", "temp": -30.0}, {"city": "Верхнеуральск", "temp": -33.0}, {"city": "Нязепетровск", "temp": -33.0}, {"city": "Челябинск", "temp": -31.0}, {"city": "Грозный", "temp": -17.0}, {"city": "Наурская", "temp": -18.0}, {"city": "Порецкое", "temp": -28.0}, {"city": "Чебоксары", "temp": -29.0}, {"city": "Анадырь", "temp": -38.0}, {"city": "Илирней", "temp": -52.0}, {"city": "Марково", "temp": -47.0}, {"city": "Омолон", "temp": -52.0}, {"city": "Островное", "temp": -49.0}, {"city": "Эгвекинот", "temp": -36.0}, {"city": "Эньмувеем", "temp": -47.0}, {"city": "Марресаля, мыс", "temp": -40.0}, {"city": "Мужи", "temp": -43.0}, {"city": "Надым", "temp": -45.0}, {"city": "Салехард", "temp": -42.0}, {"city": "Тазовский", "temp": -46.0}, {"city": "Тарко-Сале", "temp": -47.0}, {"city": "Уренгой", "temp": -48.0}, {"city": "Халясавэй", "temp": -47.0}, {"city": "Переславль- Залесский", "temp": -27.0}, {"city": "Ярославль", "temp": -29.0}];
+      var WEBHOOK_URL = "https://frostily-tough-naiad.cloudpub.ru/webhook/dda11149-8037-46f6-8586-c3e190e26b18";
+
+      var els = {
+        cityPanel: document.getElementById("cityPanel"),
+        cityCombo: document.getElementById("cityCombo"),
+        city: document.getElementById("city"),
+        cityToggle: document.getElementById("cityToggle"),
+        cityDropdown: document.getElementById("cityDropdown"),
+        objectName: document.getElementById("objectName"),
+        temp: document.getElementById("temp"),
+        globalGvsFlowRow: document.getElementById("globalGvsFlowRow"),
+        globalGvsKwRow: document.getElementById("globalGvsKwRow"),
+        globalGvsFlow: document.getElementById("globalGvsFlow"),
+        globalGvsKw: document.getElementById("globalGvsKw"),
+        consumerTabs: document.getElementById("consumerTabs"),
+        consumersContainer: document.getElementById("consumersContainer"),
+        addConsumerBtn: document.getElementById("addConsumerBtn"),
+        resultsBody: document.getElementById("resultsBody"),
+        reportFormat: document.getElementById("reportFormat"),
+        exportReportBtn: document.getElementById("exportReportBtn"),
+        calcStatus: document.getElementById("calcStatus")
+      };
+
+      var consumerSeq = 1;
+      var activeConsumerId = null;
+      var reportState = null;
+
+      function toNum(value, fallback) {
+        var n = Number(String(value || "").replace(",", ".").trim());
+        return Number.isFinite(n) ? n : fallback;
+      }
+
+      function fmt(v, digits) {
+        if (!Number.isFinite(v)) return "";
+        return v.toFixed(digits).replace(".", ",");
+      }
+
+      function fmtPair(kw, gcal) {
+        return fmt(kw, 1) + " / " + fmt(gcal, 3);
+      }
+
+      function fmtNumHtml(v, digits, className) {
+        var cls = className ? " class='" + className + "'" : "";
+        return "<span" + cls + ">" + fmt(v, digits) + "</span>";
+      }
+
+      function fmtPairHtml(kw, gcal, mainClass, subClass) {
+        var mainCls = mainClass ? " class='" + mainClass + "'" : "";
+        var subCls = subClass ? " class='" + subClass + "'" : "";
+        return "<span" + mainCls + ">" + fmt(kw, 1) + "</span><span class='num-sep'> / </span><span" + subCls + ">" + fmt(gcal, 3) + "</span>";
+      }
+
+      function getGlobalGvsInput() {
+        var mode = (document.querySelector('input[name="globalGvsMode"]:checked') || {}).value || "flow";
+        els.globalGvsFlowRow.classList.toggle("hidden", mode !== "flow");
+        els.globalGvsKwRow.classList.toggle("hidden", mode !== "kw");
+        return {
+          mode: mode,
+          flow: toNum(els.globalGvsFlow.value, 0),
+          kw: toNum(els.globalGvsKw.value, 0)
+        };
+      }
+
+      function setStatus(text, state) {
+        els.calcStatus.className = "caption status-line";
+        if (state === "loading") els.calcStatus.classList.add("status-loading");
+        if (state === "error") els.calcStatus.classList.add("status-error");
+        els.calcStatus.textContent = text || "";
+      }
+
+      function applyCityTemperature() {
+        var cityName = String(els.city.value || "").trim().toLowerCase();
+        if (!cityName) return;
+        for (var i = 0; i < cityData.length; i += 1) {
+          var item = cityData[i];
+          if (item.city.toLowerCase() === cityName) {
+            els.temp.value = String(item.temp).replace(".", ",");
+            return;
+          }
+        }
+      }
+
+      function filterCities(query) {
+        var q = String(query || "").trim().toLowerCase();
+        if (!q) return cityData.slice(0, 120);
+        var starts = [];
+        var includes = [];
+        for (var i = 0; i < cityData.length; i += 1) {
+          var name = cityData[i].city.toLowerCase();
+          if (name.indexOf(q) === 0) starts.push(cityData[i]);
+          else if (name.indexOf(q) > -1) includes.push(cityData[i]);
+        }
+        return starts.concat(includes).slice(0, 120);
+      }
+
+      function renderCityDropdown() {
+        var current = String(els.city.value || "").trim().toLowerCase();
+        var list = filterCities(current);
+        els.cityDropdown.innerHTML = "";
+        if (!list.length) {
+          var empty = document.createElement("div");
+          empty.className = "city-empty";
+          empty.textContent = "Город не найден в справочнике";
+          els.cityDropdown.appendChild(empty);
+          return;
+        }
+
+        list.forEach(function (item) {
+          var btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "city-option";
+          if (item.city.toLowerCase() === current) btn.classList.add("selected");
+          btn.textContent = item.city;
+          btn.addEventListener("click", function () {
+            els.city.value = item.city;
+            closeCityDropdown();
+            applyCityTemperature();
+            recalcAll();
+          });
+          els.cityDropdown.appendChild(btn);
+        });
+      }
+
+      function openCityDropdown() {
+        renderCityDropdown();
+        els.cityPanel.classList.add("panel-open");
+        els.cityDropdown.classList.remove("hidden");
+      }
+
+      function closeCityDropdown() {
+        els.cityPanel.classList.remove("panel-open");
+        els.cityDropdown.classList.add("hidden");
+      }
+
+      function buildConsumerCard(id) {
+        var wrap = document.createElement("div");
+        wrap.className = "consumer-card";
+        wrap.dataset.consumerId = id;
+        wrap.innerHTML = [
+          '<div class="consumer-head">',
+          '  <h4 class="consumer-title">Потребитель #' + id + '</h4>',
+          '  <button type="button" class="btn-soft btn-danger remove-consumer">Удалить</button>',
+          '</div>',
+          '<div class="grid"><div class="label">Название здания/секции</div><input class="field input-yellow" data-field="name" value="Секция ' + id + '"></div>',
+          '<div class="grid"><div class="label">Кол-во этажей</div><input class="field input-yellow" data-field="floors" value="16"></div>',
+          '<div class="grid"><div class="label">Площадь отапливаемой части здания/секции, м²</div><input class="field input-yellow" data-field="resArea" value="10000"></div>',
+          '<div class="grid"><div class="label">Кол-во совмещенных санузлов, шт.</div><input class="field input-yellow" data-field="bathrooms" value="100"></div>',
+          '<div class="grid" style="margin-top:4px;"><div class="caption" style="margin-top:0;">Согласно СП 60, для совмещенного санузла принимается расход воздуха 50 м³/ч, для санузла без ванны и душевой кабины — 25 м³/ч. В расчетах учитывается разница между указанными значениями.</div><div></div></div>',
+          '<div class="grid office-toggle-row"><div class="label">Коммерческая (офисная) часть</div><label class="inline-options"><input type="checkbox" data-field="hasOffice" checked> Есть коммерческая часть</label></div>',
+          '<div class="office-block">',
+          '  <div class="grid office-area-row hidden"><div class="label">Площадь офисной части, м²</div><input class="field input-yellow" data-field="officeArea" value="600"></div>',
+          '  <div class="grid"><div class="label">Как задать людей в офисе</div><div class="inline-options"><label><input type="radio" name="officeMode-' + id + '" value="count" checked> Кол-во людей</label><label><input type="radio" name="officeMode-' + id + '" value="density"> м² на 1 человека</label></div></div>',
+          '  <div class="grid office-people-row"><div class="label">Кол-во людей в офисе, чел.</div><input class="field input-yellow" data-field="officePeople" value="30"></div>',
+          '  <div class="grid office-density-row hidden"><div class="label">Сколько м² приходится на 1 человека</div><input class="field input-yellow" data-field="sqmPerPerson" value="10"></div>',
+          '  <div class="grid"><div class="label">Воздухообмен на человека в коммерции, м³/ч</div><input class="field input-yellow" data-field="airPerPerson" value="60"></div>',
+          '</div>',
+          '<div style="margin-top:10px;"></div>',
+          '<h4 class="consumer-title" style="margin-bottom:8px;">Горячее водоснабжение (ГВС)</h4>',
+          '<div class="grid office-toggle-row"><div class="label">Есть информация по ГВС</div><label class="inline-options"><input type="checkbox" data-field="hasGvsInfo" checked> Да</label></div>',
+          '<div class="gvs-block">',
+          '<div class="grid"><div class="label">Способ задания</div><div class="inline-options"><label><input type="radio" name="gvsMode-' + id + '" value="flow" checked> Расход, м³/ч</label><label><input type="radio" name="gvsMode-' + id + '" value="kw"> Нагрузка, кВт</label></div></div>',
+          '<div class="grid gvs-flow-row"><div class="label">Расход воды на ГВС, м³/ч</div><input class="field input-yellow" data-field="gvsFlow" value="2"></div>',
+          '<div class="grid gvs-kw-row hidden"><div class="label">Нагрузка на ГВС, кВт</div><input class="field input-yellow" data-field="gvsKw" value="180"></div>',
+          '</div>',
+          '<div class="grid" style="margin-top:12px;"><div class="label">Удельная нагрузка, Вт/м² (справочно)</div><input class="field readonly" data-result="specificLoad" readonly></div>'
+        ].join('');
+        return wrap;
+      }
+
+      function updateRemoveButtons() {
+        var cards = els.consumersContainer.querySelectorAll('.consumer-card');
+        var allowRemove = cards.length > 1;
+        Array.prototype.forEach.call(cards, function (card) {
+          var btn = card.querySelector('.remove-consumer');
+          btn.style.visibility = allowRemove ? 'visible' : 'hidden';
+        });
+      }
+
+      function setActiveConsumer(id) {
+        activeConsumerId = String(id);
+        var cards = els.consumersContainer.querySelectorAll('.consumer-card');
+        Array.prototype.forEach.call(cards, function (card) {
+          card.classList.toggle('consumer-hidden', String(card.dataset.consumerId) !== activeConsumerId);
+        });
+        var tabs = els.consumerTabs.querySelectorAll('.consumer-tab');
+        Array.prototype.forEach.call(tabs, function (tab) {
+          tab.classList.toggle('active', String(tab.dataset.tabId) === activeConsumerId);
+        });
+      }
+
+      function renderConsumerTabs() {
+        var cards = els.consumersContainer.querySelectorAll('.consumer-card');
+        var html = '';
+        Array.prototype.forEach.call(cards, function (card, index) {
+          var nameInput = card.querySelector('[data-field=\"name\"]');
+          var name = String((nameInput && nameInput.value) || '').trim() || ('Секция ' + (index + 1));
+          var isActive = String(card.dataset.consumerId) === String(activeConsumerId);
+          html += '<button type=\"button\" class=\"consumer-tab' + (isActive ? ' active' : '') + '\" data-tab-id=\"' + card.dataset.consumerId + '\">' + name + '</button>';
+        });
+        els.consumerTabs.innerHTML = html;
+      }
+
+      function updateConsumerBlocks(card) {
+        var hasOffice = card.querySelector('[data-field="hasOffice"]').checked;
+        var officeBlock = card.querySelector('.office-block');
+        officeBlock.classList.toggle('hidden', !hasOffice);
+
+        var officeMode = card.querySelector('input[name="officeMode-' + card.dataset.consumerId + '"]:checked').value;
+        card.querySelector('.office-area-row').classList.toggle('hidden', !hasOffice || officeMode !== 'density');
+        card.querySelector('.office-people-row').classList.toggle('hidden', !hasOffice || officeMode !== 'count');
+        card.querySelector('.office-density-row').classList.toggle('hidden', !hasOffice || officeMode !== 'density');
+
+        var gvsMode = card.querySelector('input[name="gvsMode-' + card.dataset.consumerId + '"]:checked').value;
+        var hasGvsInfo = card.querySelector('[data-field="hasGvsInfo"]').checked;
+        card.querySelector('.gvs-block').classList.toggle('hidden', !hasGvsInfo);
+        card.querySelector('.gvs-flow-row').classList.toggle('hidden', !hasGvsInfo || gvsMode !== 'flow');
+        card.querySelector('.gvs-kw-row').classList.toggle('hidden', !hasGvsInfo || gvsMode !== 'kw');
+      }
+
+      function collectConsumerInput(card) {
+        var officeMode = (card.querySelector('input[name="officeMode-' + card.dataset.consumerId + '"]:checked') || {}).value || "count";
+        var gvsMode = (card.querySelector('input[name="gvsMode-' + card.dataset.consumerId + '"]:checked') || {}).value || "flow";
+        return {
+          name: String(card.querySelector('[data-field="name"]').value || '').trim() || ('Потребитель #' + card.dataset.consumerId),
+          floors: toNum(card.querySelector('[data-field="floors"]').value, 1),
+          resArea: toNum(card.querySelector('[data-field="resArea"]').value, 0),
+          bathrooms: toNum(card.querySelector('[data-field="bathrooms"]').value, 0),
+          hasOffice: !!card.querySelector('[data-field="hasOffice"]').checked,
+          officeMode: officeMode,
+          officeArea: toNum(card.querySelector('[data-field="officeArea"]').value, 0),
+          officePeople: toNum(card.querySelector('[data-field="officePeople"]').value, 0),
+          sqmPerPerson: toNum(card.querySelector('[data-field="sqmPerPerson"]').value, 0),
+          airPerPerson: toNum(card.querySelector('[data-field="airPerPerson"]').value, 60),
+          hasGvsInfo: !!card.querySelector('[data-field="hasGvsInfo"]').checked,
+          gvsMode: gvsMode,
+          gvsFlow: toNum(card.querySelector('[data-field="gvsFlow"]').value, 0),
+          gvsKw: toNum(card.querySelector('[data-field="gvsKw"]').value, 0)
+        };
+      }
+
+      function renderResults(rows, total) {
+        var html = '';
+        rows.forEach(function (r) {
+          var area = Number(r.area != null ? r.area : r.resArea);
+          html += '<tr>' +
+            '<td style="padding:8px; border-bottom:1px solid rgba(120,145,177,0.2);">' + r.name + '</td>' +
+            '<td style="padding:8px; text-align:right; border-bottom:1px solid rgba(120,145,177,0.2);">' + fmt(area, 1) + '</td>' +
+            '<td style="padding:8px; text-align:right; border-bottom:1px solid rgba(120,145,177,0.2);">' + fmtPair(r.J, r.K) + '</td>' +
+            '<td style="padding:8px; text-align:right; border-bottom:1px solid rgba(120,145,177,0.2);">' + fmtPair(r.L, r.M) + '</td>' +
+            '<td style="padding:8px; text-align:right; border-bottom:1px solid rgba(120,145,177,0.2);">' + (r.hasGvsInfo ? fmtPair(r.N, r.O) : 'Нет данных') + '</td>' +
+            '<td style="padding:8px; text-align:right; border-bottom:1px solid rgba(120,145,177,0.2); font-weight:700;">' + fmtPair(r.P, r.Q) + '</td>' +
+          '</tr>';
+        });
+        html += '<tr style="background:rgba(221,243,228,0.8);">' +
+          '<td style="padding:8px; font-weight:700;">Итого по объекту</td>' +
+          '<td style="padding:8px; text-align:right; font-weight:700;">' + fmt(total.area, 1) + '</td>' +
+          '<td style="padding:8px; text-align:right; font-weight:700;">' + fmtPair(total.heatingKw, total.heatingGcal) + '</td>' +
+          '<td style="padding:8px; text-align:right; font-weight:700;">' + fmtPair(total.ventKw, total.ventGcal) + '</td>' +
+          '<td style="padding:8px; text-align:right; font-weight:700;">' + fmtPair(total.gvsKw, total.gvsGcal) + '</td>' +
+          '<td style="padding:8px; text-align:right; font-weight:800; color:#0f4a24;">' + fmtPair(total.sumKw, total.sumGcal) + '</td>' +
+        '</tr>';
+        els.resultsBody.innerHTML = html;
+      }
+
+      function applySpecificLoads(rows) {
+        var cards = els.consumersContainer.querySelectorAll('.consumer-card');
+        Array.prototype.forEach.call(cards, function (card, index) {
+          var row = rows[index];
+          var specificLoadEl = card.querySelector('[data-result="specificLoad"]');
+          if (specificLoadEl) specificLoadEl.value = row && Number.isFinite(Number(row.F)) ? fmt(Number(row.F), 1) : "";
+        });
+      }
+
+      function buildPayload() {
+        var cards = els.consumersContainer.querySelectorAll('.consumer-card');
+        var consumers = [];
+        Array.prototype.forEach.call(cards, function (card) {
+          updateConsumerBlocks(card);
+          consumers.push(collectConsumerInput(card));
+        });
+        return {
+          objectName: String(els.objectName.value || '').trim(),
+          city: String(els.city.value || '').trim(),
+          temp: toNum(els.temp.value, -30),
+          globalGvs: getGlobalGvsInput(),
+          consumers: consumers
+        };
+      }
+
+      function normalizeResponse(payload, data) {
+        var body = data || {};
+        var rows = Array.isArray(body && body.rows) ? body.rows : [];
+        var total = body && body.total ? body.total : null;
+        if (!total) throw new Error("Webhook не вернул итоговые значения total.");
+        return {
+          objectName: body.objectName || payload.objectName,
+          city: body.city || payload.city,
+          rows: rows,
+          total: total
+        };
+      }
+
+      function escapeHtml(str) {
+        return String(str || "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/\"/g, "&quot;");
+      }
+
+      function fileSafeName(str) {
+        var name = String(str || "otchet").trim();
+        if (!name) name = "otchet";
+        return name.replace(/[\\\\/:*?\"<>|]/g, "_").slice(0, 80);
+      }
+
+      function getCurrentObjectName() {
+        var name = String((els.objectName && els.objectName.value) || "").trim();
+        if (name) return name;
+        if (reportState && reportState.objectName) return String(reportState.objectName).trim();
+        return "";
+      }
+
+      function buildReportHtml(mode) {
+        if (!reportState) return "";
+        mode = mode || "docx";
+        var isPdf = mode === "pdf";
+        var title = "Укрупненные показатели потребления тепла";
+        var objectLine = "Объект: " + (getCurrentObjectName() || "Без названия");
+        var createdAtLine = "Дата и время создания: " + new Date().toLocaleString("ru-RU", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit"
+        });
+        var bodyRows = "";
+        var reportPadding = isPdf ? "16px 18px 18px" : "30px";
+        var tableWidth = "100%";
+        var tableFontSize = isPdf ? "13pt" : "11pt";
+        var reportFontFamily = "'Cambria', Cambria, 'Times New Roman', serif";
+        var cellFontSize = isPdf ? "13pt" : "11pt";
+        var cellBaseStyle = "padding:6pt 7pt; font-family:" + reportFontFamily + "; font-size:" + cellFontSize + "; line-height:1.3; mso-ascii-font-family:Cambria; mso-hansi-font-family:Cambria; mso-bidi-font-family:Cambria;";
+        var cellBorderStyle = "border:1px solid #6f7780;";
+        var headCellStyle = cellBaseStyle + cellBorderStyle + " background:#eeeeee; font-weight:700; text-align:center;";
+        var wrapStyle = "border:1px solid #9aa0a6; padding:6px 8px; background:#fcfcfc;";
+        var tableCellPadding = "4";
+        var colgroupHtml = "<colgroup>" +
+          "<col style='width:7%;' />" +
+          "<col style='width:22%;' />" +
+          "<col style='width:10%;' />" +
+          "<col style='width:11%;' />" +
+          "<col style='width:12.5%;' />" +
+          "<col style='width:12.5%;' />" +
+          "<col style='width:12.5%;' />" +
+          "<col style='width:12.5%;' />" +
+        "</colgroup>";
+
+        reportState.rows.forEach(function (r, idx) {
+          bodyRows += "<tr>" +
+            "<td style='" + cellBaseStyle + cellBorderStyle + "'>" + (idx + 1) + "</td>" +
+            "<td style='" + cellBaseStyle + cellBorderStyle + "'>" + escapeHtml(r.name) + "</td>" +
+            "<td style='" + cellBaseStyle + cellBorderStyle + " text-align:right;'>" + fmtNumHtml(r.floors, 0, "num-main") + "</td>" +
+            "<td style='" + cellBaseStyle + cellBorderStyle + " text-align:right;'>" + fmtNumHtml(r.area != null ? r.area : r.resArea, 1, "num-main") + "</td>" +
+            "<td style='" + cellBaseStyle + cellBorderStyle + " text-align:right;'>" + fmtPairHtml(r.J, r.K, "num-main", "num-sub") + "</td>" +
+            "<td style='" + cellBaseStyle + cellBorderStyle + " text-align:right;'>" + fmtPairHtml(r.L, r.M, "num-main", "num-sub") + "</td>" +
+            "<td style='" + cellBaseStyle + cellBorderStyle + " text-align:right;'>" + (r.hasGvsInfo ? fmtPairHtml(r.N, r.O, "num-main", "num-sub") : "<span class='num-muted'>Нет данных</span>") + "</td>" +
+            "<td style='" + cellBaseStyle + cellBorderStyle + " text-align:right;'>" + fmtPairHtml(r.P, r.Q, "num-main num-key", "num-sub num-key") + "</td>" +
+          "</tr>";
+        });
+
+        bodyRows += "<tr class='sum-row'>" +
+          "<td style='" + cellBaseStyle + cellBorderStyle + "'></td><td style='" + cellBaseStyle + cellBorderStyle + "'></td>" +
+          "<td style='" + cellBaseStyle + cellBorderStyle + "'>Суммарно</td>" +
+          "<td style='" + cellBaseStyle + cellBorderStyle + " text-align:right;'>" + fmtNumHtml(reportState.total.area, 1, "num-main num-strong") + "</td>" +
+          "<td style='" + cellBaseStyle + cellBorderStyle + " text-align:right;'>" + fmtPairHtml(reportState.total.heatingKw, reportState.total.heatingGcal, "num-main num-strong", "num-sub num-strong") + "</td>" +
+          "<td style='" + cellBaseStyle + cellBorderStyle + " text-align:right;'>" + fmtPairHtml(reportState.total.ventKw, reportState.total.ventGcal, "num-main num-strong", "num-sub num-strong") + "</td>" +
+          "<td style='" + cellBaseStyle + cellBorderStyle + " text-align:right;'>" + fmtPairHtml(reportState.total.gvsKw, reportState.total.gvsGcal, "num-main num-strong", "num-sub num-strong") + "</td>" +
+          "<td style='" + cellBaseStyle + cellBorderStyle + " text-align:right;'>" + fmtPairHtml(reportState.total.sumKw, reportState.total.sumGcal, "num-main num-max", "num-sub num-max") + "</td>" +
+        "</tr>";
+
+        return (
+          "<div id='report-print' style='font-family:" + reportFontFamily + "; font-size:" + cellFontSize + "; mso-ascii-font-family:Cambria; mso-hansi-font-family:Cambria; mso-bidi-font-family:Cambria; color:#111; background:#fff; padding:" + reportPadding + ";'>" +
+            (isPdf ? "<div style='text-align:left; font-size:12pt; font-weight:700; letter-spacing:0.3px; color:#2f3c49; margin:0 0 10px;'>osnovaprof.ru</div>" : "") +
+            "<div style='height:5px; width:100%; max-width:520px; margin:0 auto 14px; border-radius:999px; background:linear-gradient(90deg, #5f6f82 0%, #8b99ab 52%, #c4ccd7 100%);'></div>" +
+            "<h2 style='text-align:center; margin:0 0 14px; font-size:" + (isPdf ? "16pt" : "14pt") + "; letter-spacing:0.2px;'>" + title + "</h2>" +
+            "<div style='font-size:" + (isPdf ? "12pt" : "11pt") + "; font-weight:700; margin-bottom:6px;'>" + escapeHtml(objectLine) + "</div>" +
+            "<div style='font-size:" + (isPdf ? "12pt" : "11pt") + "; color:#525a63; margin-bottom:14px;'>" + escapeHtml(createdAtLine) + "</div>" +
+            "<div style='" + wrapStyle + "'>" +
+            "<table border='1' cellspacing='0' cellpadding='" + tableCellPadding + "' style='width:" + tableWidth + "; margin:0 auto; table-layout:fixed; border-collapse:collapse; font-size:" + tableFontSize + "; font-family:" + reportFontFamily + "; border:1px solid #6f7780;'>" +
+              colgroupHtml +
+              "<thead>" +
+                "<tr>" +
+                  "<th style='" + headCellStyle + "'>п/п</th>" +
+                  "<th style='" + headCellStyle + "'>Название</th>" +
+                  "<th style='" + headCellStyle + "'>Этажность</th>" +
+                  "<th style='" + headCellStyle + "'>Площадь, м²</th>" +
+                  "<th style='" + headCellStyle + "'>Нагрузка на отопление, кВт / Гкал/ч</th>" +
+                  "<th style='" + headCellStyle + "'>Нагрузка на вентиляцию, кВт / Гкал/ч</th>" +
+                  "<th style='" + headCellStyle + "'>Нагрузка ГВС, кВт / Гкал/ч</th>" +
+                  "<th style='" + headCellStyle + "'>Нагрузка суммарная, кВт / Гкал/ч</th>" +
+                "</tr>" +
+              "</thead>" +
+              "<tbody>" + bodyRows + "</tbody>" +
+            "</table>" +
+            "</div>" +
+            "<div style='margin-top:18px; font-size:" + (isPdf ? "12pt" : "11pt") + ";'>*Нагрузка на ГВС принята согласно задания от раздела “Водоснабжение и канализация”</div>" +
+            "<style>" +
+              "#report-print, #report-print * { font-family:" + reportFontFamily + " !important; }" +
+              "#report-print th, #report-print td { font-size:" + cellFontSize + "; padding:10px 12px; line-height:1.35; vertical-align:middle; word-break:break-word; }" +
+              "#report-print th { font-weight:700; text-align:center; background:#eeeeee; }" +
+              "#report-print tbody tr:nth-child(even):not(.sum-row) td { background:#f7f7f7; }" +
+              "#report-print td:nth-child(1), #report-print td:nth-child(3) { text-align:center; }" +
+              "#report-print .sum-row td { font-weight:700; background:#eceff3; }" +
+              "#report-print .num-main { font-weight:600; color:#1f2933; }" +
+              "#report-print .num-sub { font-weight:500; color:#48515a; }" +
+              "#report-print .num-sep { color:#7a838d; font-weight:500; }" +
+              "#report-print .num-key { font-weight:700; color:#1f3d63; }" +
+              "#report-print .num-strong { font-weight:700; color:#0f3a63; }" +
+              "#report-print .num-max { font-weight:800; color:#0f4a24; }" +
+              "#report-print .num-muted { color:#6d7680; font-style:italic; }" +
+            "</style>" +
+          "</div>"
+        );
+      }
+
+      function loadScript(src) {
+        return new Promise(function (resolve, reject) {
+          var script = document.createElement("script");
+          script.src = src;
+          script.onload = resolve;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
+
+      function loadFirstAvailable(urls) {
+        var i = 0;
+        return new Promise(function (resolve, reject) {
+          function next() {
+            if (i >= urls.length) {
+              reject(new Error("Не удалось загрузить библиотеку"));
+              return;
+            }
+            var url = urls[i++];
+            loadScript(url).then(resolve).catch(next);
+          }
+          next();
+        });
+      }
+
+      function ensurePdfLibs() {
+        var tasks = [];
+        if (!(window.jspdf && window.jspdf.jsPDF)) tasks.push(loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"));
+        if (!window.html2canvas) tasks.push(loadScript("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"));
+        return Promise.all(tasks);
+      }
+
+      function ensureDocxLibs() {
+        var tasks = [];
+        if (!(window.docx && window.docx.Packer)) {
+          tasks.push(loadFirstAvailable([
+            "https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js",
+            "https://unpkg.com/docx@8.5.0/build/index.umd.js"
+          ]));
+        }
+        return Promise.all(tasks);
+      }
+
+      function downloadBlob(blob, filename) {
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+      }
+
+      function exportPdf() {
+        if (!reportState) return;
+        ensurePdfLibs().then(function () {
+          var tmp = document.createElement("div");
+          tmp.style.position = "fixed";
+          tmp.style.left = "-10000px";
+          tmp.style.top = "0";
+          tmp.style.width = "980px";
+          tmp.innerHTML = buildReportHtml("pdf");
+          document.body.appendChild(tmp);
+
+          window.html2canvas(tmp.firstChild, { scale: 2, backgroundColor: "#ffffff" }).then(function (canvas) {
+            var pdf = new window.jspdf.jsPDF("p", "pt", "a4");
+            var marginX = 22;
+            var marginTop = 8;
+            var marginBottom = 2;
+            var pdfW = pdf.internal.pageSize.getWidth() - marginX * 2;
+            var pdfH = pdf.internal.pageSize.getHeight() - marginTop - marginBottom;
+            var imgW = pdfW;
+            var imgH = canvas.height * imgW / canvas.width;
+            var imgData = canvas.toDataURL("image/png");
+            var left = imgH;
+            var y = marginTop;
+
+            pdf.addImage(imgData, "PNG", marginX, y, imgW, imgH);
+            left -= pdfH;
+            while (left > 0) {
+              y = marginTop - (imgH - left);
+              pdf.addPage();
+              pdf.addImage(imgData, "PNG", marginX, y, imgW, imgH);
+              left -= pdfH;
+            }
+
+            pdf.save(fileSafeName(getCurrentObjectName() || "otchet") + ".pdf");
+            document.body.removeChild(tmp);
+          });
+        });
+      }
+
+      function exportDocx() {
+        if (!reportState) return;
+        ensureDocxLibs().then(function () {
+          if (!(window.docx && window.docx.Packer)) {
+            throw new Error("Библиотека DOCX не инициализирована");
+          }
+          var d = window.docx;
+          var border = { style: d.BorderStyle.SINGLE, size: 4, color: "6F7780" };
+          var headerCellMargins = { top: 90, bottom: 90, left: 110, right: 110 };
+          var bodyCellMargins = { top: 90, bottom: 90, left: 110, right: 110 };
+          var columns = [7, 22, 10, 11, 12.5, 12.5, 12.5, 12.5];
+
+          function textRun(text, bold, color) {
+            return new d.TextRun({
+              text: String(text == null ? "" : text),
+              bold: !!bold,
+              font: "Cambria",
+              size: 22,
+              color: color || "111111"
+            });
+          }
+
+          function tableCell(text, opts) {
+            opts = opts || {};
+            return new d.TableCell({
+              width: { size: opts.widthPct || 12.5, type: d.WidthType.PERCENTAGE },
+              verticalAlign: d.VerticalAlign.CENTER,
+              margins: opts.header ? headerCellMargins : bodyCellMargins,
+              shading: opts.fill ? { fill: opts.fill, type: d.ShadingType.CLEAR, color: "auto" } : undefined,
+              borders: { top: border, bottom: border, left: border, right: border },
+              children: [
+                new d.Paragraph({
+                  spacing: { before: 0, after: 0 },
+                  alignment: opts.align || d.AlignmentType.LEFT,
+                  children: [textRun(text, !!opts.bold, opts.color)]
+                })
+              ]
+            });
+          }
+
+          var headerRow = new d.TableRow({
+            tableHeader: true,
+            children: [
+              tableCell("п/п", { header: true, bold: true, fill: "EEEEEE", align: d.AlignmentType.CENTER, widthPct: columns[0] }),
+              tableCell("Название", { header: true, bold: true, fill: "EEEEEE", align: d.AlignmentType.CENTER, widthPct: columns[1] }),
+              tableCell("Этажность", { header: true, bold: true, fill: "EEEEEE", align: d.AlignmentType.CENTER, widthPct: columns[2] }),
+              tableCell("Площадь, м²", { header: true, bold: true, fill: "EEEEEE", align: d.AlignmentType.CENTER, widthPct: columns[3] }),
+              tableCell("Нагрузка на отопление, кВт / Гкал/ч", { header: true, bold: true, fill: "EEEEEE", align: d.AlignmentType.CENTER, widthPct: columns[4] }),
+              tableCell("Нагрузка на вентиляцию, кВт / Гкал/ч", { header: true, bold: true, fill: "EEEEEE", align: d.AlignmentType.CENTER, widthPct: columns[5] }),
+              tableCell("Нагрузка ГВС, кВт / Гкал/ч", { header: true, bold: true, fill: "EEEEEE", align: d.AlignmentType.CENTER, widthPct: columns[6] }),
+              tableCell("Нагрузка суммарная, кВт / Гкал/ч", { header: true, bold: true, fill: "EEEEEE", align: d.AlignmentType.CENTER, widthPct: columns[7] })
+            ]
+          });
+
+          var bodyTableRows = reportState.rows.map(function (r, idx) {
+            return new d.TableRow({
+              children: [
+                tableCell(idx + 1, { align: d.AlignmentType.CENTER, widthPct: columns[0] }),
+                tableCell(r.name, { widthPct: columns[1] }),
+                tableCell(fmt(r.floors, 0), { align: d.AlignmentType.RIGHT, widthPct: columns[2] }),
+                tableCell(fmt(r.area != null ? r.area : r.resArea, 1), { align: d.AlignmentType.RIGHT, widthPct: columns[3] }),
+                tableCell(fmtPair(r.J, r.K), { align: d.AlignmentType.RIGHT, widthPct: columns[4] }),
+                tableCell(fmtPair(r.L, r.M), { align: d.AlignmentType.RIGHT, widthPct: columns[5] }),
+                tableCell(r.hasGvsInfo ? fmtPair(r.N, r.O) : "Нет данных", { align: d.AlignmentType.RIGHT, widthPct: columns[6], color: r.hasGvsInfo ? "111111" : "6D7680" }),
+                tableCell(fmtPair(r.P, r.Q), { align: d.AlignmentType.RIGHT, widthPct: columns[7], bold: true, color: "1F3D63" })
+              ]
+            });
+          });
+
+          var totalRow = new d.TableRow({
+            children: [
+              tableCell("", { fill: "ECEFF3", widthPct: columns[0] }),
+              tableCell("", { fill: "ECEFF3", widthPct: columns[1] }),
+              tableCell("Суммарно", { fill: "ECEFF3", bold: true, widthPct: columns[2] }),
+              tableCell(fmt(reportState.total.area, 1), { fill: "ECEFF3", align: d.AlignmentType.RIGHT, bold: true, widthPct: columns[3], color: "0F3A63" }),
+              tableCell(fmtPair(reportState.total.heatingKw, reportState.total.heatingGcal), { fill: "ECEFF3", align: d.AlignmentType.RIGHT, bold: true, widthPct: columns[4], color: "0F3A63" }),
+              tableCell(fmtPair(reportState.total.ventKw, reportState.total.ventGcal), { fill: "ECEFF3", align: d.AlignmentType.RIGHT, bold: true, widthPct: columns[5], color: "0F3A63" }),
+              tableCell(fmtPair(reportState.total.gvsKw, reportState.total.gvsGcal), { fill: "ECEFF3", align: d.AlignmentType.RIGHT, bold: true, widthPct: columns[6], color: "0F3A63" }),
+              tableCell(fmtPair(reportState.total.sumKw, reportState.total.sumGcal), { fill: "ECEFF3", align: d.AlignmentType.RIGHT, bold: true, widthPct: columns[7], color: "0F4A24" })
+            ]
+          });
+
+          var reportTable = new d.Table({
+            width: { size: 100, type: d.WidthType.PERCENTAGE },
+            rows: [headerRow].concat(bodyTableRows).concat([totalRow])
+          });
+
+          var createdAt = new Date().toLocaleString("ru-RU", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit"
+          });
+
+          var doc = new d.Document({
+            sections: [{
+              properties: {
+                page: {
+                  margin: { top: 1440, right: 720, bottom: 720, left: 720 }
+                }
+              },
+              headers: {
+                default: new d.Header({
+                  children: [
+                    new d.Paragraph({
+                      alignment: d.AlignmentType.LEFT,
+                      spacing: { before: 0, after: 120 },
+                      children: [textRun("osnovaprof.ru", true, "2F3C49")]
+                    })
+                  ]
+                })
+              },
+              children: [
+                new d.Paragraph({
+                  alignment: d.AlignmentType.CENTER,
+                  spacing: { before: 0, after: 180 },
+                  children: [textRun("Укрупненные показатели потребления тепла", true, "111111")]
+                }),
+                new d.Paragraph({
+                  spacing: { before: 0, after: 80 },
+                  children: [textRun("Объект: " + (getCurrentObjectName() || "Без названия"), true, "111111")]
+                }),
+                new d.Paragraph({
+                  spacing: { before: 0, after: 180 },
+                  children: [textRun("Дата и время создания: " + createdAt, false, "525A63")]
+                }),
+                reportTable,
+                new d.Paragraph({
+                  spacing: { before: 220, after: 0 },
+                  children: [textRun("*Нагрузка на ГВС принята согласно задания от раздела “Водоснабжение и канализация”", false, "111111")]
+                })
+              ]
+            }]
+          });
+
+          return d.Packer.toBlob(doc).then(function (blob) {
+            downloadBlob(blob, fileSafeName(getCurrentObjectName() || "otchet") + ".docx");
+          });
+        }).catch(function (err) {
+          console.error(err);
+          alert("Не удалось сформировать DOCX.");
+        });
+      }
+
+      var calcDebounceTimer = null;
+      var currentCalcController = null;
+      var calcRequestSeq = 0;
+
+      function recalcAll() {
+        clearTimeout(calcDebounceTimer);
+        calcDebounceTimer = setTimeout(requestCalculation, 250);
+      }
+
+      function requestCalculation() {
+        var payload = buildPayload();
+        var requestId = ++calcRequestSeq;
+
+        if (currentCalcController) currentCalcController.abort();
+        currentCalcController = window.AbortController ? new AbortController() : null;
+
+        setStatus("Выполняется расчет через n8n...", "loading");
+
+        fetch(WEBHOOK_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          signal: currentCalcController ? currentCalcController.signal : undefined
+        }).then(function (response) {
+          if (!response.ok) throw new Error("HTTP " + response.status);
+          return response.json();
+        }).then(function (data) {
+          if (requestId !== calcRequestSeq) return;
+          var normalized = normalizeResponse(payload, data);
+          applySpecificLoads(normalized.rows);
+          renderResults(normalized.rows, normalized.total);
+          reportState = normalized;
+          setStatus("Расчет обновлен: " + new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit", second: "2-digit" }), "");
+        }).catch(function (err) {
+          if (err && err.name === "AbortError") return;
+          console.error(err);
+          setStatus("Ошибка расчета через n8n. Проверьте webhook и ответ workflow.", "error");
+        });
+      }
+
+      function addConsumer() {
+        var card = buildConsumerCard(consumerSeq++);
+        els.consumersContainer.appendChild(card);
+        updateConsumerBlocks(card);
+        updateRemoveButtons();
+        renderConsumerTabs();
+        setActiveConsumer(card.dataset.consumerId);
+        recalcAll();
+      }
+
+      function initCityList() {
+        if (cityData.length) els.city.value = cityData[0].city;
+        applyCityTemperature();
+      }
+
+      initCityList();
+      addConsumer();
+
+      els.addConsumerBtn.addEventListener('click', addConsumer);
+
+      els.consumerTabs.addEventListener('click', function (evt) {
+        var tab = evt.target.closest('.consumer-tab');
+        if (!tab) return;
+        setActiveConsumer(tab.dataset.tabId);
+      });
+
+      els.consumersContainer.addEventListener('click', function (evt) {
+        if (evt.target.classList.contains('remove-consumer')) {
+          var removedCard = evt.target.closest('.consumer-card');
+          var removedId = removedCard.dataset.consumerId;
+          removedCard.remove();
+          if (String(activeConsumerId) === String(removedId)) {
+            var next = els.consumersContainer.querySelector('.consumer-card');
+            activeConsumerId = next ? next.dataset.consumerId : null;
+          }
+          updateRemoveButtons();
+          renderConsumerTabs();
+          if (activeConsumerId) setActiveConsumer(activeConsumerId);
+          recalcAll();
+        }
+      });
+
+      els.consumersContainer.addEventListener('input', function () {
+        renderConsumerTabs();
+        recalcAll();
+      });
+
+      els.consumersContainer.addEventListener('change', function () {
+        recalcAll();
+      });
+
+      els.city.addEventListener("change", function () {
+        applyCityTemperature();
+        recalcAll();
+      });
+      els.city.addEventListener("input", function () {
+        openCityDropdown();
+        applyCityTemperature();
+        recalcAll();
+      });
+      els.city.addEventListener("focus", function () {
+        openCityDropdown();
+      });
+      els.city.addEventListener("keydown", function (evt) {
+        if (evt.key === "Escape") closeCityDropdown();
+      });
+      els.cityToggle.addEventListener("click", function () {
+        if (els.cityDropdown.classList.contains("hidden")) openCityDropdown();
+        else closeCityDropdown();
+      });
+      document.addEventListener("click", function (evt) {
+        if (!els.cityCombo.contains(evt.target)) closeCityDropdown();
+      });
+
+      els.temp.addEventListener('input', recalcAll);
+      els.temp.addEventListener('change', recalcAll);
+      els.objectName.addEventListener('input', recalcAll);
+      els.objectName.addEventListener('change', recalcAll);
+      els.globalGvsFlow.addEventListener('input', recalcAll);
+      els.globalGvsFlow.addEventListener('change', recalcAll);
+      els.globalGvsKw.addEventListener('input', recalcAll);
+      els.globalGvsKw.addEventListener('change', recalcAll);
+      Array.prototype.forEach.call(document.querySelectorAll('input[name=\"globalGvsMode\"]'), function (el) {
+        el.addEventListener('change', recalcAll);
+      });
+      els.exportReportBtn.addEventListener('click', function () {
+        if (!reportState) {
+          alert("Сначала дождитесь успешного расчета.");
+          return;
+        }
+        var format = els.reportFormat.value;
+        if (format === 'docx') exportDocx();
+        else exportPdf();
+      });
+
+      recalcAll();
+    })();
+  </script>
+</body>
+</html>
