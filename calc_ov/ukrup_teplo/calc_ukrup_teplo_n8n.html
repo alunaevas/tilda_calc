@@ -460,14 +460,14 @@
     <div class="teplo-app">
       <div class="app-header">
         <h2>Расчет укрупненных показателей потребления тепла жилого здания</h2>
-        <p>Вводите значения только в желтые поля. Расчет выполняется через webhook в n8n, результаты возвращаются обратно в таблицу.</p>
+        <p>Вводите значения только в желтые поля. Результаты расчета автоматически отображаются в таблице.</p>
       </div>
 
       <div class="panel" id="cityPanel">
         <h3 class="section-title">Исходные данные</h3>
         <div class="object-name-block">
           <div class="label">Название объекта строительства</div>
-          <input class="field input-yellow" id="objectName" type="text" value="Объект строительства" />
+          <input class="field input-yellow" id="objectName" type="text" placeholder="Введите название объекта строительства" />
         </div>
         <div class="city-row">
           <div class="city-cell">
@@ -480,7 +480,7 @@
           </div>
           <div class="city-cell">
             <div class="label">Температура холодной пятидневки, °С</div>
-            <input class="field input-yellow" id="temp" type="text" inputmode="decimal" />
+            <input class="field input-yellow" id="temp" type="text" inputmode="decimal" placeholder="Выберите город" />
           </div>
         </div>
         <p class="caption">Можно вводить название с клавиатуры: при совпадении с городом из списка температура подставится автоматически.</p>
@@ -506,11 +506,11 @@
         </div>
         <div class="grid" id="globalGvsFlowRow">
           <div class="label">Расход воды на ГВС по объекту, м³/ч</div>
-          <input class="field input-yellow" id="globalGvsFlow" type="text" inputmode="decimal" value="2" />
+          <input class="field input-yellow" id="globalGvsFlow" type="text" inputmode="decimal" placeholder="Введите расход воды на ГВС" />
         </div>
         <div class="grid hidden" id="globalGvsKwRow">
           <div class="label">Нагрузка на ГВС по объекту, кВт</div>
-          <input class="field input-yellow" id="globalGvsKw" type="text" inputmode="decimal" value="180" />
+          <input class="field input-yellow" id="globalGvsKw" type="text" inputmode="decimal" placeholder="Введите нагрузку на ГВС" />
         </div>
       </div>
 
@@ -691,26 +691,26 @@
           '  <h4 class="consumer-title">Потребитель #' + id + '</h4>',
           '  <button type="button" class="btn-soft btn-danger remove-consumer">Удалить</button>',
           '</div>',
-          '<div class="grid"><div class="label">Название здания/секции</div><input class="field input-yellow" data-field="name" value="Секция ' + id + '"></div>',
-          '<div class="grid"><div class="label">Кол-во этажей</div><input class="field input-yellow" data-field="floors" value="16"></div>',
-          '<div class="grid"><div class="label">Площадь отапливаемой части здания/секции, м²</div><input class="field input-yellow" data-field="resArea" value="10000"></div>',
-          '<div class="grid"><div class="label">Кол-во совмещенных санузлов, шт.</div><input class="field input-yellow" data-field="bathrooms" value="100"></div>',
+          '<div class="grid"><div class="label">Название здания/секции</div><input class="field input-yellow" data-field="name" placeholder="Введите название здания или секции"></div>',
+          '<div class="grid"><div class="label">Кол-во этажей</div><input class="field input-yellow" data-field="floors" placeholder="Введите количество этажей"></div>',
+          '<div class="grid"><div class="label">Площадь отапливаемой части здания/секции, м²</div><input class="field input-yellow" data-field="resArea" placeholder="Введите площадь"></div>',
+          '<div class="grid"><div class="label">Кол-во совмещенных санузлов, шт.</div><input class="field input-yellow" data-field="bathrooms" placeholder="Введите количество санузлов"></div>',
           '<div class="grid" style="margin-top:4px;"><div class="caption" style="margin-top:0;">Согласно СП 60, для совмещенного санузла принимается расход воздуха 50 м³/ч, для санузла без ванны и душевой кабины — 25 м³/ч. В расчетах учитывается разница между указанными значениями.</div><div></div></div>',
           '<div class="grid office-toggle-row"><div class="label">Коммерческая (офисная) часть</div><label class="inline-options"><input type="checkbox" data-field="hasOffice" checked> Есть коммерческая часть</label></div>',
           '<div class="office-block">',
-          '  <div class="grid office-area-row hidden"><div class="label">Площадь офисной части, м²</div><input class="field input-yellow" data-field="officeArea" value="600"></div>',
+          '  <div class="grid office-area-row hidden"><div class="label">Площадь офисной части, м²</div><input class="field input-yellow" data-field="officeArea" placeholder="Введите площадь офисной части"></div>',
           '  <div class="grid"><div class="label">Как задать людей в офисе</div><div class="inline-options"><label><input type="radio" name="officeMode-' + id + '" value="count" checked> Кол-во людей</label><label><input type="radio" name="officeMode-' + id + '" value="density"> м² на 1 человека</label></div></div>',
-          '  <div class="grid office-people-row"><div class="label">Кол-во людей в офисе, чел.</div><input class="field input-yellow" data-field="officePeople" value="30"></div>',
-          '  <div class="grid office-density-row hidden"><div class="label">Сколько м² приходится на 1 человека</div><input class="field input-yellow" data-field="sqmPerPerson" value="10"></div>',
-          '  <div class="grid"><div class="label">Воздухообмен на человека в коммерции, м³/ч</div><input class="field input-yellow" data-field="airPerPerson" value="60"></div>',
+          '  <div class="grid office-people-row"><div class="label">Кол-во людей в офисе, чел.</div><input class="field input-yellow" data-field="officePeople" placeholder="Введите количество людей"></div>',
+          '  <div class="grid office-density-row hidden"><div class="label">Сколько м² приходится на 1 человека</div><input class="field input-yellow" data-field="sqmPerPerson" placeholder="Введите площадь на одного человека"></div>',
+          '  <div class="grid"><div class="label">Воздухообмен на человека в коммерции, м³/ч</div><input class="field input-yellow" data-field="airPerPerson" placeholder="Введите воздухообмен на человека"></div>',
           '</div>',
           '<div style="margin-top:10px;"></div>',
           '<h4 class="consumer-title" style="margin-bottom:8px;">Горячее водоснабжение (ГВС)</h4>',
           '<div class="grid office-toggle-row"><div class="label">Есть информация по ГВС</div><label class="inline-options"><input type="checkbox" data-field="hasGvsInfo" checked> Да</label></div>',
           '<div class="gvs-block">',
           '<div class="grid"><div class="label">Способ задания</div><div class="inline-options"><label><input type="radio" name="gvsMode-' + id + '" value="flow" checked> Расход, м³/ч</label><label><input type="radio" name="gvsMode-' + id + '" value="kw"> Нагрузка, кВт</label></div></div>',
-          '<div class="grid gvs-flow-row"><div class="label">Расход воды на ГВС, м³/ч</div><input class="field input-yellow" data-field="gvsFlow" value="2"></div>',
-          '<div class="grid gvs-kw-row hidden"><div class="label">Нагрузка на ГВС, кВт</div><input class="field input-yellow" data-field="gvsKw" value="180"></div>',
+          '<div class="grid gvs-flow-row"><div class="label">Расход воды на ГВС, м³/ч</div><input class="field input-yellow" data-field="gvsFlow" placeholder="Введите расход воды на ГВС"></div>',
+          '<div class="grid gvs-kw-row hidden"><div class="label">Нагрузка на ГВС, кВт</div><input class="field input-yellow" data-field="gvsKw" placeholder="Введите нагрузку на ГВС"></div>',
           '</div>',
           '<div class="grid" style="margin-top:12px;"><div class="label">Удельная нагрузка, Вт/м² (справочно)</div><input class="field readonly" data-result="specificLoad" readonly></div>'
         ].join('');
@@ -1248,7 +1248,7 @@
         }).catch(function (err) {
           if (err && err.name === "AbortError") return;
           console.error(err);
-          setStatus("Ошибка расчета через n8n. Проверьте webhook и ответ workflow.", "error");
+          setStatus("Расчетный сервер недоступен, мы уже работаем над устранением неполадки. Попробуйте повторить попытку позже.", "error");
         });
       }
 
@@ -1262,10 +1262,7 @@
         recalcAll();
       }
 
-      function initCityList() {
-        if (cityData.length) els.city.value = cityData[0].city;
-        applyCityTemperature();
-      }
+      function initCityList() {}
 
       initCityList();
       addConsumer();
