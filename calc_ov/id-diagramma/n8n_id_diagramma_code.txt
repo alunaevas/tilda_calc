@@ -1,0 +1,605 @@
+const input = $json.body ?? $json;
+
+const P = 101.325;
+const COIL_SURFACE_T_DEFAULT = 9;
+const CHART = { dMin: 0, dMax: 35, tMin: -35, tMax: 50 };
+
+function toNum(value) {
+  const n = Number(String(value ?? '').replace(',', '.').trim());
+  return Number.isFinite(n) ? n : NaN;
+}
+
+function round(value, digits) {
+  if (!Number.isFinite(value)) return NaN;
+  const p = 10 ** digits;
+  return Math.round(value * p) / p;
+}
+
+function formatStatusNumber(value) {
+  return round(value, 1).toFixed(1).replace('.', ',');
+}
+
+function formatPdfNumber(value, digits) {
+  if (!Number.isFinite(value)) return '—';
+  return round(value, digits).toFixed(digits).replace('.', ',');
+}
+
+function emptyPoint() {
+  return { t: NaN, i: NaN, rh: NaN, d: NaN };
+}
+
+function processTypeName(type) {
+  if (type === 'heating') return 'Нагрев';
+  if (type === 'cooling') return 'Охлаждение';
+  if (type === 'isothermal_humidification') return 'Увлажнение паром';
+  if (type === 'adiabatic_humidification') return 'Адиабатическое увлажнение';
+  if (type === 'merge_streams') return 'Слияние потоков';
+  return 'Процесс';
+}
+
+function processTypeColor(type) {
+  if (type === 'heating') return '#d33636';
+  if (type === 'cooling') return '#2a72d6';
+  if (type === 'isothermal_humidification') return '#2c9f45';
+  if (type === 'adiabatic_humidification') return '#2f9d4f';
+  if (type === 'merge_streams') return '#111111';
+  return '#666666';
+}
+
+function saturationPressure(T) {
+  return 0.61078 * Math.exp((17.2694 * T) / (T + 237.29));
+}
+
+function humidityRatioFromTRH(T, RH) {
+  const pws = saturationPressure(T);
+  const pv = (RH / 100) * pws;
+  return 0.62198 * pv / (P - pv);
+}
+
+function enthalpy(T, w) {
+  return 1.005 * T + w * (2501 + 1.86 * T);
+}
+
+function wFromTH(T, h) {
+  const den = 2501 + 1.86 * T;
+  return (h - 1.005 * T) / den;
+}
+
+function tFromHW(h, w) {
+  const den = 1.005 + 1.86 * w;
+  return (h - 2501 * w) / den;
+}
+
+function rhFromTW(T, w) {
+  const pv = (w * P) / (0.62198 + w);
+  const pws = saturationPressure(T);
+  return 100 * (pv / pws);
+}
+
+function dewPointFromPvKPa(pvKPa) {
+  if (!Number.isFinite(pvKPa) || pvKPa <= 0) return NaN;
+  let low = -80;
+  let high = 120;
+  for (let n = 0; n < 90; n += 1) {
+    const mid = (low + high) / 2;
+    const pwsMid = saturationPressure(mid);
+    if (pwsMid > pvKPa) high = mid; else low = mid;
+  }
+  return (low + high) / 2;
+}
+
+function solvePoint(data) {
+  let known = 0;
+  ['t', 'i', 'rh', 'd'].forEach((k) => {
+    if (Number.isFinite(data[k])) known += 1;
+  });
+
+  if (known < 2) return { error: 'Нужно заполнить минимум 2 поля в точке.' };
+
+  let T = data.t;
+  let h = data.i;
+  let RH = data.rh;
+  let d = data.d;
+  let w;
+
+  if (Number.isFinite(T) && Number.isFinite(RH)) {
+    w = humidityRatioFromTRH(T, RH);
+    h = enthalpy(T, w);
+  } else if (Number.isFinite(T) && Number.isFinite(h)) {
+    w = wFromTH(T, h);
+    RH = rhFromTW(T, w);
+  } else if (Number.isFinite(T) && Number.isFinite(d)) {
+    w = d / 1000;
+    h = enthalpy(T, w);
+    RH = rhFromTW(T, w);
+  } else if (Number.isFinite(h) && Number.isFinite(d)) {
+    w = d / 1000;
+    T = tFromHW(h, w);
+    RH = rhFromTW(T, w);
+  } else if (Number.isFinite(h) && Number.isFinite(RH)) {
+    let low = -30;
+    let high = 80;
+    for (let n = 0; n < 100; n += 1) {
+      const mid = (low + high) / 2;
+      const wm = humidityRatioFromTRH(mid, RH);
+      const hm = enthalpy(mid, wm);
+      if (hm > h) high = mid; else low = mid;
+    }
+    T = (low + high) / 2;
+    w = humidityRatioFromTRH(T, RH);
+  } else if (Number.isFinite(RH) && Number.isFinite(d)) {
+    w = d / 1000;
+    let low = -30;
+    let high = 80;
+    for (let n = 0; n < 100; n += 1) {
+      const mid = (low + high) / 2;
+      const wrh = humidityRatioFromTRH(mid, RH);
+      if (wrh > w) high = mid; else low = mid;
+    }
+    T = (low + high) / 2;
+    h = enthalpy(T, w);
+  } else {
+    return { error: 'Комбинация параметров не поддерживается.' };
+  }
+
+  if (!Number.isFinite(T) || !Number.isFinite(h) || !Number.isFinite(RH) || !Number.isFinite(w)) {
+    return { error: 'Не удалось вычислить параметры точки.' };
+  }
+
+  if (RH < 0 || RH > 100.5 || w < 0) {
+    return { error: 'Проверьте корректность данных: состояние вне физического диапазона.' };
+  }
+
+  return { t: T, i: h, rh: RH, d: w * 1000 };
+}
+
+function saturatedPointFromTemperature(T) {
+  const wSat = humidityRatioFromTRH(T, 100);
+  return { t: T, i: enthalpy(T, wSat), rh: 100, d: wSat * 1000 };
+}
+
+function pointFromTD(T, d) {
+  const w = d / 1000;
+  return { t: T, i: enthalpy(T, w), rh: rhFromTW(T, w), d };
+}
+
+function coilAdpPoint(coilSurfaceT) {
+  return saturatedPointFromTemperature(coilSurfaceT);
+}
+
+function pointOnCoilLineByBypass(p1, adp, bypass) {
+  const t = adp.t + bypass * (p1.t - adp.t);
+  const d = adp.d + bypass * (p1.d - adp.d);
+  return pointFromTD(t, d);
+}
+
+function dryAirMassFlowKgS(airFlowM3h, pRef) {
+  const rho = 1.2;
+  const moistFlow = (airFlowM3h * rho) / 3600;
+  const wRef = Math.max(0, pRef.d / 1000);
+  return moistFlow / (1 + wRef);
+}
+
+function thermalPowerKw(airFlowM3h, p1, p2) {
+  return dryAirMassFlowKgS(airFlowM3h, p1) * (p2.i - p1.i);
+}
+
+function coolingCapacityKw(airFlowM3h, p1, p2) {
+  const massFlow = dryAirMassFlowKgS(airFlowM3h, p1);
+  const w1 = p1.d / 1000;
+  const w2 = p2.d / 1000;
+  const cp = 1.005 + 1.86 * ((w1 + w2) / 2);
+  let qTotal = massFlow * (p1.i - p2.i);
+  let qSensible = massFlow * cp * (p1.t - p2.t);
+  let qLatent = qTotal - qSensible;
+  if (qTotal < 0) qTotal = 0;
+  if (qSensible < 0) qSensible = 0;
+  if (qLatent < 0) qLatent = 0;
+  return { total: qTotal, sensible: qSensible, latent: qLatent };
+}
+
+function condensedWaterKgForHour(airFlowM3h, p1, p2) {
+  return dryAirMassFlowKgS(airFlowM3h, p1) * 3600 * Math.max(0, (p1.d - p2.d) / 1000);
+}
+
+function humidifierWaterKgForHour(airFlowM3h, p1, p2) {
+  return dryAirMassFlowKgS(airFlowM3h, p1) * 3600 * Math.max(0, (p2.d - p1.d) / 1000);
+}
+
+function solveMergeStreamsPoint(startPoint, stage, mainFlowM3h) {
+  if (!Number.isFinite(mainFlowM3h) || mainFlowM3h <= 0) {
+    return { error: 'Для слияния потоков расход основного потока должен быть больше 0.' };
+  }
+  const extraFlowM3h = toNum(stage.mergeFlow);
+  if (!Number.isFinite(extraFlowM3h) || extraFlowM3h <= 0) {
+    return { error: 'Для слияния потоков задайте расход дополнительной точки больше 0.' };
+  }
+  const key1 = stage.mergeParam1;
+  const key2 = stage.mergeParam2;
+  if (!key1 || !key2 || key1 === key2) {
+    return { error: 'Для дополнительной точки выберите 2 разных параметра.' };
+  }
+  const value1 = toNum(stage.mergeValue1);
+  const value2 = toNum(stage.mergeValue2);
+  if (!Number.isFinite(value1) || !Number.isFinite(value2)) {
+    return { error: 'Для дополнительной точки заполните оба параметра.' };
+  }
+  const extraRaw = emptyPoint();
+  extraRaw[key1] = value1;
+  extraRaw[key2] = value2;
+  const extraPoint = solvePoint(extraRaw);
+  if (extraPoint.error) return { error: 'Ошибка в дополнительной точке: ' + extraPoint.error };
+  const dryMass1 = dryAirMassFlowKgS(mainFlowM3h, startPoint);
+  const dryMass2 = dryAirMassFlowKgS(extraFlowM3h, extraPoint);
+  if (!Number.isFinite(dryMass1) || dryMass1 <= 0 || !Number.isFinite(dryMass2) || dryMass2 <= 0) {
+    return { error: 'Не удалось определить массовый расход одного из потоков.' };
+  }
+  const totalDryMass = dryMass1 + dryMass2;
+  const wMix = (dryMass1 * (startPoint.d / 1000) + dryMass2 * (extraPoint.d / 1000)) / totalDryMass;
+  const hMix = (dryMass1 * startPoint.i + dryMass2 * extraPoint.i) / totalDryMass;
+  const mixedPoint = solvePoint({ i: hMix, d: wMix * 1000 });
+  if (mixedPoint.error) return { error: 'Не удалось вычислить параметры смешанного потока.' };
+  return {
+    point: mixedPoint,
+    extraPoint,
+    mainFlow: mainFlowM3h,
+    extraFlow: extraFlowM3h,
+    totalFlow: mainFlowM3h + extraFlowM3h,
+  };
+}
+
+function solveHeatingPoint(startPoint, key, value, airFlowM3h) {
+  if (!['t', 'i', 'q'].includes(key)) return { error: 'Для нагрева можно задавать только t, i или Q.' };
+  let solved;
+  if (key === 'q') {
+    if (!Number.isFinite(airFlowM3h) || airFlowM3h <= 0) return { error: 'Для расчета по мощности Q задайте расход воздуха больше 0.' };
+    if (value <= 0) return { error: 'Мощность нагревателя Q должна быть больше 0 кВт.' };
+    const dryMassFlow = dryAirMassFlowKgS(airFlowM3h, startPoint);
+    if (!Number.isFinite(dryMassFlow) || dryMassFlow <= 0) return { error: 'Не удалось определить массовый расход воздуха.' };
+    solved = solvePoint({ i: startPoint.i + value / dryMassFlow, d: startPoint.d });
+  } else {
+    solved = solvePoint({ d: startPoint.d, [key]: value });
+  }
+  if (solved.error) return solved;
+  if (solved.t <= startPoint.t + 0.02 || solved.i <= startPoint.i + 0.02) return { error: 'Для нагрева следующая точка должна иметь более высокие t и i.' };
+  solved.d = startPoint.d;
+  return { point: solved };
+}
+
+function solveCoolingPoint(startPoint, key, value, airFlowM3h, coilSurfaceT) {
+  if (!['t', 'rh', 'q'].includes(key)) return { error: 'Для охлаждения можно задавать только t, φ или Q.' };
+  if (!Number.isFinite(coilSurfaceT)) return { error: 'Введите корректную температуру теплообменника.' };
+  if (startPoint.t <= coilSurfaceT + 0.05) return { error: `Для охлаждения температура входной точки должна быть выше температуры теплообменника (${formatStatusNumber(coilSurfaceT)}°C).` };
+
+  const adp = coilAdpPoint(coilSurfaceT);
+  const dewPoint = dewPointFromPvKPa((startPoint.d / 1000 * P) / (0.62198 + startPoint.d / 1000));
+  const condensationPossible = Number.isFinite(dewPoint) && dewPoint > coilSurfaceT + 0.05;
+  let dryEndPoint = null;
+  if (!condensationPossible) {
+    dryEndPoint = solvePoint({ t: coilSurfaceT, d: startPoint.d });
+    if (dryEndPoint.error) return dryEndPoint;
+  }
+
+  function validateCoolingPoint(solvedPoint, allowCondensation) {
+    if (!Number.isFinite(solvedPoint.t) || !Number.isFinite(solvedPoint.i) || !Number.isFinite(solvedPoint.rh) || !Number.isFinite(solvedPoint.d)) {
+      return { error: 'Не удалось вычислить параметры следующей точки.' };
+    }
+    const eps = 0.001;
+    if (solvedPoint.t >= startPoint.t - eps || solvedPoint.i >= startPoint.i - eps) return { error: 'Для охлаждения следующая точка должна иметь меньшие t и i.' };
+    if (!allowCondensation && Math.abs(solvedPoint.d - startPoint.d) > 0.05) return { error: 'Для сухого охлаждения влагосодержание должно оставаться постоянным.' };
+    if (allowCondensation && solvedPoint.d > startPoint.d + eps) return { error: 'Для охлаждения с конденсацией влагосодержание не должно расти.' };
+    if (solvedPoint.rh < 0 || solvedPoint.rh > 100.5 || solvedPoint.d < 0) return { error: 'Проверьте корректность данных: состояние вне физического диапазона.' };
+    return { point: solvedPoint };
+  }
+
+  if (!condensationPossible) {
+    let drySolved;
+    if (key === 't') {
+      if (value >= startPoint.t) return { error: 'Для охлаждения t следующей точки должна быть ниже входной.' };
+      if (value < coilSurfaceT - 0.05) return { error: `t следующей точки не может быть ниже ${formatStatusNumber(coilSurfaceT)}°C.` };
+      drySolved = solvePoint({ t: value, d: startPoint.d });
+    } else if (key === 'rh') {
+      if (value <= startPoint.rh + 0.05 || value > 100) return { error: 'Для охлаждения φ следующей точки должна быть больше входной и не выше 100%.' };
+      drySolved = solvePoint({ rh: value, d: startPoint.d });
+      if (drySolved.error) return drySolved;
+      if (drySolved.t < coilSurfaceT - 0.05) return { error: `При tпов=${formatStatusNumber(coilSurfaceT)}°C без конденсации максимум достигаемой влажности: ${formatStatusNumber(dryEndPoint.rh)}%.` };
+    } else {
+      if (!Number.isFinite(airFlowM3h) || airFlowM3h <= 0) return { error: 'Для расчета по мощности Q задайте расход воздуха больше 0.' };
+      if (value <= 0) return { error: 'Полная мощность охладителя Q должна быть больше 0 кВт.' };
+      const qDryMax = coolingCapacityKw(airFlowM3h, startPoint, dryEndPoint).total;
+      if (value > qDryMax + 0.05) return { error: `Заданная Q выше предельной для сухого охлаждения. Максимум: ${formatStatusNumber(qDryMax)} кВт.` };
+      let low = coilSurfaceT;
+      let high = startPoint.t;
+      for (let n = 0; n < 90; n += 1) {
+        const mid = (low + high) / 2;
+        const pointMid = solvePoint({ t: mid, d: startPoint.d });
+        const qMid = coolingCapacityKw(airFlowM3h, startPoint, pointMid).total;
+        if (qMid > value) low = mid; else high = mid;
+      }
+      drySolved = solvePoint({ t: (low + high) / 2, d: startPoint.d });
+    }
+    if (drySolved.error) return drySolved;
+    return validateCoolingPoint(drySolved, false);
+  }
+
+  let solved;
+  if (key === 't') {
+    if (value >= startPoint.t) return { error: 'Для охлаждения t следующей точки должна быть ниже входной.' };
+    if (value < coilSurfaceT - 0.05) return { error: `t следующей точки не может быть ниже ${formatStatusNumber(coilSurfaceT)}°C.` };
+    const bypass = (value - adp.t) / (startPoint.t - adp.t);
+    if (bypass < 0 || bypass > 1) return { error: `Заданная t недостижима при tпов=${formatStatusNumber(coilSurfaceT)}°C.` };
+    solved = pointOnCoilLineByBypass(startPoint, adp, bypass);
+  } else if (key === 'rh') {
+    if (value <= startPoint.rh + 0.05 || value > 100) return { error: 'Для охлаждения φ следующей точки должна быть больше входной и не выше 100%.' };
+    let low = 0;
+    let high = 1;
+    for (let n = 0; n < 90; n += 1) {
+      const mid = (low + high) / 2;
+      const pointMid = pointOnCoilLineByBypass(startPoint, adp, mid);
+      if (pointMid.rh > value) low = mid; else high = mid;
+    }
+    solved = pointOnCoilLineByBypass(startPoint, adp, (low + high) / 2);
+  } else {
+    if (!Number.isFinite(airFlowM3h) || airFlowM3h <= 0) return { error: 'Для расчета по мощности Q задайте расход воздуха больше 0.' };
+    if (value <= 0) return { error: 'Полная мощность охладителя Q должна быть больше 0 кВт.' };
+    const qMax = coolingCapacityKw(airFlowM3h, startPoint, adp).total;
+    if (value > qMax + 0.05) return { error: `Заданная Q выше предельной. Максимум: ${formatStatusNumber(qMax)} кВт.` };
+    let low = 0;
+    let high = 1;
+    for (let n = 0; n < 90; n += 1) {
+      const mid = (low + high) / 2;
+      const pointMid = pointOnCoilLineByBypass(startPoint, adp, mid);
+      const qMid = coolingCapacityKw(airFlowM3h, startPoint, pointMid).total;
+      if (qMid > value) low = mid; else high = mid;
+    }
+    solved = pointOnCoilLineByBypass(startPoint, adp, (low + high) / 2);
+  }
+  return validateCoolingPoint(solved, true);
+}
+
+function solveAdiabaticHumidificationPoint(startPoint, key, value, airFlowM3h) {
+  if (!['rh', 'w'].includes(key)) return { error: 'Для адиабатического увлажнения можно задавать только φ или W.' };
+  let solved;
+  if (key === 'rh') {
+    if (value <= startPoint.rh + 0.05 || value > 100) return { error: 'Для адиабатического увлажнения φ следующей точки должна быть больше входной и не выше 100%.' };
+    solved = solvePoint({ i: startPoint.i, rh: value });
+  } else {
+    if (!Number.isFinite(airFlowM3h) || airFlowM3h <= 0) return { error: 'Для расчета по W задайте расход воздуха больше 0.' };
+    if (value <= 0) return { error: 'Масса испарившейся воды W должна быть больше 0 кг/ч.' };
+    const dryMassFlow = dryAirMassFlowKgS(airFlowM3h, startPoint);
+    if (!Number.isFinite(dryMassFlow) || dryMassFlow <= 0) return { error: 'Не удалось определить массовый расход воздуха.' };
+    solved = solvePoint({ i: startPoint.i, d: startPoint.d + (value / (dryMassFlow * 3600)) * 1000 });
+  }
+  if (solved.error) return solved;
+  if (solved.t >= startPoint.t - 0.001 || solved.d <= startPoint.d + 0.001) return { error: 'Для адиабатического увлажнения следующая точка должна иметь меньшую t и большее d.' };
+  solved.i = startPoint.i;
+  return { point: solved };
+}
+
+function solveIsothermalHumidificationPoint(startPoint, key, value, airFlowM3h) {
+  if (!['rh', 'w'].includes(key)) return { error: 'Для изотермического увлажнения можно задавать только φ или W.' };
+  let solved;
+  if (key === 'rh') {
+    if (value <= startPoint.rh + 0.05 || value > 100) return { error: 'Для изотермического увлажнения φ следующей точки должна быть больше входной и не выше 100%.' };
+    solved = solvePoint({ t: startPoint.t, rh: value });
+  } else {
+    if (!Number.isFinite(airFlowM3h) || airFlowM3h <= 0) return { error: 'Для расчета по W задайте расход воздуха больше 0.' };
+    if (value <= 0) return { error: 'Масса испарившейся воды W должна быть больше 0 кг/ч.' };
+    const dryMassFlow = dryAirMassFlowKgS(airFlowM3h, startPoint);
+    if (!Number.isFinite(dryMassFlow) || dryMassFlow <= 0) return { error: 'Не удалось определить массовый расход воздуха.' };
+    solved = solvePoint({ t: startPoint.t, d: startPoint.d + (value / (dryMassFlow * 3600)) * 1000 });
+  }
+  if (solved.error) return solved;
+  if (solved.d <= startPoint.d + 0.001 || solved.i <= startPoint.i + 0.001) return { error: 'Для изотермического увлажнения следующая точка должна иметь большее d и i.' };
+  if (Math.abs(solved.t - startPoint.t) > 0.05) return { error: 'Не удалось сохранить изотермическое условие (t = const).' };
+  solved.t = startPoint.t;
+  return { point: solved };
+}
+
+function solveSecondPoint(startPoint, processType, key, value, airFlowM3h, stage) {
+  if (processType === 'merge_streams') return { error: 'Для слияния потоков используйте параметры дополнительной точки.' };
+  if (!Number.isFinite(value)) return { error: 'Введите корректное значение параметра процесса.' };
+  if (processType === 'heating') return solveHeatingPoint(startPoint, key, value, airFlowM3h);
+  if (processType === 'cooling') return solveCoolingPoint(startPoint, key, value, airFlowM3h, toNum(stage.coolingCoilTemp) || COIL_SURFACE_T_DEFAULT);
+  if (processType === 'adiabatic_humidification') return solveAdiabaticHumidificationPoint(startPoint, key, value, airFlowM3h);
+  if (processType === 'isothermal_humidification') return solveIsothermalHumidificationPoint(startPoint, key, value, airFlowM3h);
+  return { error: 'Неизвестный тип процесса.' };
+}
+
+function outOfRange(point) {
+  return point.d < CHART.dMin || point.d > CHART.dMax || point.t < CHART.tMin || point.t > CHART.tMax;
+}
+
+const meta = input.meta || {};
+if (meta.module && meta.module !== 'id-diagramma') {
+  return [{ json: { ignored: true, meta, statusMessage: 'Запрос относится к другому модулю.' } }];
+}
+
+const response = {
+  meta,
+  point1: null,
+  stagePoints: [],
+  points: [],
+  segments: [],
+  stageFlows: [],
+  exportProcessRows: [],
+  statusMessage: '',
+  statusIsError: false,
+};
+
+const manualValues = input.point1?.values || {};
+const manualCount = Number(input.point1?.manualCount || 0);
+
+if (manualCount < 2) {
+  if (manualCount === 1) {
+    response.statusMessage = 'Для точки 1 укажите еще один параметр. Всего нужно задать два из четырех.';
+    response.statusIsError = true;
+  }
+  return [{ json: response }];
+}
+
+if (manualCount > 2) {
+  response.statusMessage = 'Для точки 1 нужно задать ровно два параметра из четырех.';
+  response.statusIsError = true;
+  return [{ json: response }];
+}
+
+const point1 = solvePoint({
+  t: toNum(manualValues.t),
+  i: toNum(manualValues.i),
+  rh: toNum(manualValues.rh),
+  d: toNum(manualValues.d),
+});
+
+if (point1.error) {
+  response.statusMessage = 'Ошибка в точке 1: ' + point1.error;
+  response.statusIsError = true;
+  return [{ json: response }];
+}
+
+const stages = Array.isArray(input.stages) ? input.stages : [];
+response.point1 = point1;
+
+if (!stages.length) {
+  response.statusMessage = 'Добавьте процесс нагрева, охлаждения, увлажнения или слияния потоков.';
+  return [{ json: response }];
+}
+
+const initialFlow = toNum(stages[0]?.flow);
+if (!Number.isFinite(initialFlow) || initialFlow <= 0) {
+  response.statusMessage = 'Введите расход воздуха в процессе 1 больше 0.';
+  response.statusIsError = true;
+  return [{ json: response }];
+}
+
+let currentFlow = initialFlow;
+point1.flow = currentFlow;
+response.points.push(point1);
+let summaries = [];
+let hasOutOfRange = outOfRange(point1);
+
+for (let i = 0; i < stages.length; i += 1) {
+  const stage = stages[i] || {};
+  const startPoint = response.points[response.points.length - 1];
+  startPoint.flow = currentFlow;
+  response.stageFlows.push(currentFlow);
+
+  let result;
+  if (stage.type === 'merge_streams') {
+    result = solveMergeStreamsPoint(startPoint, stage, currentFlow);
+  } else {
+    const value = toNum(stage.value);
+    result = solveSecondPoint(startPoint, stage.type, stage.param, value, currentFlow, stage);
+  }
+
+  if (result.error) {
+    response.statusMessage = `Ошибка в процессе ${i + 1}: ${result.error}`;
+    response.statusIsError = true;
+    return [{ json: response }];
+  }
+
+  const nextPoint = result.point;
+  nextPoint.flow = result.totalFlow || currentFlow;
+  response.stagePoints.push(nextPoint);
+  response.points.push(nextPoint);
+  hasOutOfRange = hasOutOfRange || outOfRange(nextPoint);
+
+  if (stage.type === 'merge_streams') {
+    response.segments.push({ from: startPoint, to: nextPoint, type: stage.type, toIndex: response.points.length - 1 });
+    response.segments.push({
+      from: result.extraPoint,
+      to: nextPoint,
+      type: stage.type,
+      toIndex: response.points.length - 1,
+      extraPoint: true,
+      extraLabel: 'P' + (i + 2) + 'д',
+      extraFlow: result.extraFlow,
+    });
+    summaries.push(`Процесс ${i + 1}: Lсум=${formatStatusNumber(result.totalFlow)} м³/ч, t=${formatStatusNumber(nextPoint.t)} °C, φ=${formatStatusNumber(nextPoint.rh)} %`);
+    response.exportProcessRows.push({
+      name: processTypeName(stage.type),
+      color: processTypeColor(stage.type),
+      secondaryStartNo: String(i + 1) + "'",
+      secondaryStartT: formatPdfNumber(result.extraPoint.t, 1),
+      secondaryStartRh: formatPdfNumber(result.extraPoint.rh, 1),
+      secondaryStartL: formatPdfNumber(result.extraFlow, 0),
+      startNo: i + 1,
+      startT: formatPdfNumber(startPoint.t, 1),
+      startRh: formatPdfNumber(startPoint.rh, 1),
+      startL: formatPdfNumber(currentFlow, 0),
+      endNo: i + 2,
+      endT: formatPdfNumber(nextPoint.t, 1),
+      endRh: formatPdfNumber(nextPoint.rh, 1),
+      endL: formatPdfNumber(result.totalFlow, 0),
+      q: '—',
+      w: '—',
+    });
+  } else {
+    response.segments.push({ from: startPoint, to: nextPoint, type: stage.type, toIndex: response.points.length - 1 });
+    if (stage.type === 'heating') {
+      const qHeat = thermalPowerKw(currentFlow, startPoint, nextPoint);
+      summaries.push(`Процесс ${i + 1}: Q=${formatStatusNumber(Math.abs(qHeat))} кВт`);
+      response.exportProcessRows.push({
+        name: processTypeName(stage.type),
+        nameLines: stage.type === 'adiabatic_humidification' ? ['Адиабатическое', 'увлажнение'] : null,
+        color: processTypeColor(stage.type),
+        startNo: i + 1,
+        startT: formatPdfNumber(startPoint.t, 1),
+        startRh: formatPdfNumber(startPoint.rh, 1),
+        startL: formatPdfNumber(currentFlow, 0),
+        endNo: i + 2,
+        endT: formatPdfNumber(nextPoint.t, 1),
+        endRh: formatPdfNumber(nextPoint.rh, 1),
+        endL: formatPdfNumber(currentFlow, 0),
+        q: formatPdfNumber(qHeat, 1),
+        w: '—',
+      });
+    } else if (stage.type === 'cooling') {
+      const cooling = coolingCapacityKw(currentFlow, startPoint, nextPoint);
+      const waterKg = condensedWaterKgForHour(currentFlow, startPoint, nextPoint);
+      summaries.push(`Процесс ${i + 1}: Q=${formatStatusNumber(cooling.total)} кВт, W=${formatStatusNumber(waterKg)} кг`);
+      response.exportProcessRows.push({
+        name: processTypeName(stage.type),
+        color: processTypeColor(stage.type),
+        startNo: i + 1,
+        startT: formatPdfNumber(startPoint.t, 1),
+        startRh: formatPdfNumber(startPoint.rh, 1),
+        startL: formatPdfNumber(currentFlow, 0),
+        endNo: i + 2,
+        endT: formatPdfNumber(nextPoint.t, 1),
+        endRh: formatPdfNumber(nextPoint.rh, 1),
+        endL: formatPdfNumber(currentFlow, 0),
+        q: formatPdfNumber(-cooling.total, 1),
+        w: formatPdfNumber(-waterKg, 1),
+      });
+    } else {
+      const humidifierWaterKg = humidifierWaterKgForHour(currentFlow, startPoint, nextPoint);
+      summaries.push(`Процесс ${i + 1}: Масса поступившей в воздух влаги W=${formatStatusNumber(humidifierWaterKg)} кг`);
+      response.exportProcessRows.push({
+        name: processTypeName(stage.type),
+        nameLines: stage.type === 'adiabatic_humidification' ? ['Адиабатическое', 'увлажнение'] : null,
+        color: processTypeColor(stage.type),
+        startNo: i + 1,
+        startT: formatPdfNumber(startPoint.t, 1),
+        startRh: formatPdfNumber(startPoint.rh, 1),
+        startL: formatPdfNumber(currentFlow, 0),
+        endNo: i + 2,
+        endT: formatPdfNumber(nextPoint.t, 1),
+        endRh: formatPdfNumber(nextPoint.rh, 1),
+        endL: formatPdfNumber(currentFlow, 0),
+        q: formatPdfNumber(thermalPowerKw(currentFlow, startPoint, nextPoint), 1),
+        w: formatPdfNumber(humidifierWaterKg, 1),
+      });
+    }
+  }
+
+  currentFlow = nextPoint.flow;
+}
+
+response.statusMessage = summaries.join(' | ');
+if (hasOutOfRange) {
+  response.statusMessage += ' Внимание: часть точек вне диапазона графика (d: 0..35 г/кг, t: -35..50°C).';
+  response.statusIsError = true;
+}
+
+return [{ json: response }];
