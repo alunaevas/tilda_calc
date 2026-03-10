@@ -1,0 +1,69 @@
+const input = $json.body ?? $json;
+const meta = input.meta || {};
+
+if (meta.module && meta.module !== 'calc_sp300') {
+  return [
+    {
+      json: {
+        ignored: true,
+        meta,
+        statusMessage: 'Запрос относится к другому модулю.',
+      },
+    },
+  ];
+}
+
+const inputs = input.inputs || {};
+
+function toNum(value, fallback) {
+  const n = Number(String(value ?? '').replace(',', '.').trim());
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function roundUpTo10(n) {
+  return Math.ceil(n / 10) * 10;
+}
+
+function getLocationName(code) {
+  return code === 1 ? 'Жилые здания' : 'Административные здания';
+}
+
+const C2 = toNum(inputs.location, 1);
+const C3 = toNum(inputs.pdk, 20);
+const A6 = toNum(inputs.nm, 0);
+const B6 = toNum(inputs.spo, 0);
+const D6 = toNum(inputs.sramp, 0);
+const F6 = B6 / 2 + D6 + 10;
+const H6 = C2 === 1 ? 0.6 : 1;
+const J6 = 0.008 * F6;
+const L6 = F6 < 51 ? 7.6 : 0.89 * Math.pow(F6, 0.49);
+const N6 = C2 === 1 ? L6 : J6 + L6;
+const P6 = A6 * H6 * N6;
+const R6raw = C3 > 0 ? (1000 * P6 / C3) * 1.25 : 0;
+const R6 = C3 > 0 ? roundUpTo10(R6raw) : 0;
+
+return [
+  {
+    json: {
+      meta,
+      result: {
+        C2,
+        C3,
+        A6,
+        B6,
+        D6,
+        F6,
+        H6,
+        J6,
+        L6,
+        N6,
+        P6,
+        R6raw,
+        R6,
+        locationName: inputs.locationName || getLocationName(C2),
+      },
+      statusMessage: 'Результаты расчета обновлены.',
+      statusIsError: false,
+    },
+  },
+];
