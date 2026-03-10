@@ -1,0 +1,239 @@
+Sub inword()
+    Dim WordApp As Object
+    Dim WordDoc As Object
+    Dim ws As Worksheet
+    Dim rowCount As Integer
+    Dim lastRow As Integer
+    Dim tableRange As Range
+    Dim i As Integer
+    Dim savePath As String
+    Dim cellValue As String
+    Dim sectionNumber As Integer
+    Dim subNumber As Integer
+
+    ' Устанавливаем рабочий лист
+    Set ws = ThisWorkbook.Sheets(1)
+
+    ' Принудительный пересчет всех формул в Excel
+    ws.Calculate
+
+    ' Определяем rowCount для динамических таблиц
+    rowCount = ws.Range("B5").Value - ws.Range("C5").Value - 1
+    lastRow = 21 + rowCount
+
+    ' Открываем Word
+    On Error Resume Next
+    Set WordApp = GetObject(Class:="Word.Application")
+    If WordApp Is Nothing Then
+        Set WordApp = CreateObject("Word.Application")
+        WordApp.Visible = True
+    End If
+    On Error GoTo 0
+
+    ' Проверка, удалось ли запустить Word
+    If WordApp Is Nothing Then
+        MsgBox "Ошибка: Word не запущен.", vbCritical
+        Exit Sub
+    End If
+
+    ' Создаем новый документ Word
+    On Error Resume Next
+    Set WordDoc = WordApp.Documents.Add
+    On Error GoTo 0
+
+    ' Проверяем, создан ли документ
+    If WordDoc Is Nothing Then
+        MsgBox "Ошибка: Не удалось создать новый документ в Word.", vbCritical
+        Exit Sub
+    End If
+    
+     ' Добавляем заголовок документа
+    WordApp.Selection.Style = WordApp.ActiveDocument.Styles("Заголовок 1")
+    WordApp.Selection.TypeText "Расчет системы противодымной вентиляции коридора"
+    WordApp.Selection.TypeParagraph
+    
+ ' Добавляем верхний колонтитул
+    With WordDoc.Sections(1).Headers(1).Range
+        .ParagraphFormat.Alignment = 2 ' Выравнивание по правому краю
+        .Text = "FireVent Calc © v.2.1.1.1 2018-2025 InPAD"
+    End With
+    
+      ' Добавляем нижний колонтитул с номером страницы
+Dim FooterRange As Object
+Set FooterRange = WordDoc.Sections(1).Footers(1).Range
+FooterRange.ParagraphFormat.Alignment = wdAlignParagraphCenter
+FooterRange.InsertAfter "Страница "
+FooterRange.Collapse wdCollapseEnd
+FooterRange.Fields.Add Range:=FooterRange, Type:=33
+
+  ' === 1. Вставка исходных данных с правильной нумерацией ===
+sectionNumber = 1 ' Начинаем нумерацию разделов
+On Error Resume Next ' Обрабатываем ошибку, если стиль не найден
+WordApp.Selection.Style = WordApp.ActiveDocument.Styles("Heading 1") ' Попытка на английском
+If Err.Number <> 0 Then
+    Err.Clear
+    WordApp.Selection.Style = WordApp.ActiveDocument.Styles("Заголовок 2") ' Если ошибка, пробуем на русском
+End If
+On Error GoTo 0
+
+WordApp.Selection.TypeText sectionNumber & ". Исходные данные"
+WordApp.Selection.TypeParagraph
+
+subNumber = 1 ' Начинаем нумерацию подпунктов
+For i = 1 To 18 ' Столбцы A:R (18 столбцов)
+    ' Убираем возможные скрытые переносы строк
+    cellValue = Trim(Replace(Replace(Replace(ws.Cells(5, i).Text, vbLf, " "), vbCr, " "), vbCrLf, " "))
+    
+    If cellValue = "" Or cellValue = " " Or cellValue = "??" Then
+        cellValue = Trim(ws.Cells(5, i).Value2)
+    End If
+    If cellValue = "" Or cellValue = " " Or cellValue = "??" Then
+        cellValue = Trim(ws.Cells(5, i).Value)
+    End If
+    If IsNumeric(cellValue) Then
+        cellValue = CDbl(cellValue)
+    ElseIf cellValue = "" Or cellValue = " " Or cellValue = "??" Then
+        cellValue = "[Нет данных]"
+    End If
+    
+    ' Убираем скрытые символы из заголовка столбца
+    Dim headerText As String
+    headerText = Trim(Replace(Replace(Replace(ws.Cells(2, i).Text, vbLf, " "), vbCr, " "), vbCrLf, " "))
+
+    ' Устанавливаем стиль обычного текста
+    On Error Resume Next
+    WordApp.Selection.Style = WordApp.ActiveDocument.Styles("Normal") ' Обычный текст
+    If Err.Number <> 0 Then
+        Err.Clear
+        WordApp.Selection.Style = WordApp.ActiveDocument.Styles("Обычный")
+    End If
+    On Error GoTo 0
+
+    ' Вставляем строку с корректным форматированием
+    WordApp.Selection.TypeText sectionNumber & "." & subNumber & " " & headerText & ": " & cellValue & ";"
+    WordApp.Selection.TypeParagraph ' Перенос на новую строку
+
+    subNumber = subNumber + 1
+Next i
+
+' Финальный перенос строки
+WordApp.Selection.TypeParagraph
+
+    ' === 2. Вставка таблицы климатических данных ===
+    sectionNumber = sectionNumber + 1
+    Call InsertTable(WordApp, ws.Range("E8:H10"), sectionNumber & ". Климатические данные")
+
+    ' === 3. Вставка таблицы характеристик продуктов горения ===
+    sectionNumber = sectionNumber + 1
+    Call InsertTable(WordApp, ws.Range("A7:B16"), sectionNumber & ". Характеристики продуктов горения")
+
+    ' === 4. Вставка таблицы давления и расходов по этажам дымоудаления ===
+    sectionNumber = sectionNumber + 1
+    Call InsertTable(WordApp, ws.Range("A19:K" & lastRow), sectionNumber & ". Давление и расходы по этажам дымоудаления")
+    
+ ' === 5. Вставка таблицы давления и расходов по этажам компенсации (с этажами) ===
+sectionNumber = sectionNumber + 1
+
+Dim numRows As Long, numColsComp As Long
+Dim iRow As Long, iCol As Long
+Dim compensationData As Variant, floorData As Variant, combinedData() As Variant
+Dim tempWS As Worksheet
+
+numRows = lastRow - 19 + 1
+numColsComp = ws.Range("L19:U" & lastRow).Columns.Count  ' число столбцов в диапазоне компенсации
+
+' Считываем данные компенсации и этажей
+compensationData = ws.Range("L19:U" & lastRow).Value
+floorData = ws.Range("A19:A" & lastRow).Value
+
+' Формируем объединенный массив: первый столбец – этажи, далее данные компенсации
+ReDim combinedData(1 To numRows, 1 To numColsComp + 1)
+For iRow = 1 To numRows
+    combinedData(iRow, 1) = floorData(iRow, 1)
+    For iCol = 1 To numColsComp
+        combinedData(iRow, iCol + 1) = compensationData(iRow, iCol)
+    Next iCol
+Next iRow
+
+' Создаем временный лист для объединенных данных
+Set tempWS = ThisWorkbook.Worksheets.Add
+With tempWS.Range("A1").Resize(numRows, numColsComp + 1)
+    .Value = combinedData
+End With
+
+' Вставляем таблицу из временного диапазона
+Call InsertTable(WordApp, tempWS.Range("A1").Resize(numRows, numColsComp + 1), sectionNumber & ". Давление и расходы по этажам компенсации дымоудаления")
+
+' Удаляем временный лист
+Application.DisplayAlerts = False
+tempWS.Delete
+Application.DisplayAlerts = True
+
+    
+    ' === 6. Вставка таблицы "Характеристика оборудования" ===
+    sectionNumber = sectionNumber + 1
+    Dim equipmentStartRow As Integer, equipmentEndRow As Integer
+    equipmentStartRow = 23 + rowCount
+    equipmentEndRow = equipmentStartRow + 7
+    Call InsertTable(WordApp, ws.Range("A" & equipmentStartRow & ":B" & equipmentEndRow), sectionNumber & ". Характеристика оборудования")
+    
+    ' === 7. Вставка таблицы "Характеристики клапана-дымоприемника" ===
+    sectionNumber = sectionNumber + 1
+    Dim equipmentStartRow1 As Integer, equipmentEndRow1 As Integer
+    equipmentStartRow1 = 23 + rowCount
+    equipmentEndRow1 = equipmentStartRow1 + 7
+    Call InsertTable(WordApp, ws.Range("D" & equipmentStartRow1 & ":F" & equipmentEndRow1), sectionNumber & ". Характеристики клапана-дымоприемника")
+    
+    ' === 8. Вставка таблицы "Характеристики клапана компенсации" ===
+    sectionNumber = sectionNumber + 1
+    Dim equipmentStartRow2 As Integer, equipmentEndRow2 As Integer
+    equipmentStartRow2 = 23 + rowCount
+    equipmentEndRow2 = equipmentStartRow2 + 7
+    Call InsertTable(WordApp, ws.Range("I" & equipmentStartRow1 & ":K" & equipmentEndRow1), sectionNumber & ". Характеристики клапана компенсации")
+    
+    ' === 9. Вставка таблицы "Характеристики шахт" ===
+    sectionNumber = sectionNumber + 1
+    Call InsertTable(WordApp, ws.Range("J8:R10"), sectionNumber & ". Характеристика шахт")
+
+    ' Определяем путь сохранения (где находится Excel-файл)
+    savePath = ThisWorkbook.Path & "\Выгрузка_" & Format(Now, "yyyy-mm-dd_hhmm") & ".docx"
+
+    ' Сохраняем документ Word
+    On Error Resume Next
+    WordDoc.SaveAs savePath
+    On Error GoTo 0
+
+    ' Проверяем, удалось ли сохранить файл
+    If Dir(savePath) = "" Then
+        MsgBox "Ошибка: Не удалось сохранить документ Word.", vbCritical
+    Else
+        MsgBox "? Выгрузка завершена! Файл сохранен в " & savePath, vbInformation
+    End If
+
+    ' Очистка объектов
+    Set WordDoc = Nothing
+    Set WordApp = Nothing
+End Sub
+
+' === Функция вставки таблицы с заголовком ===
+Sub InsertTable(WordApp As Object, tableRange As Range, title As String)
+    ' Вставляем заголовок с нумерацией
+    On Error Resume Next
+    WordApp.Selection.Style = WordApp.ActiveDocument.Styles("Heading 2") ' Заголовок 2 (англ)
+    If Err.Number <> 0 Then
+        Err.Clear
+        WordApp.Selection.Style = WordApp.ActiveDocument.Styles("Заголовок 2") ' Заголовок 2 (рус)
+    End If
+    On Error GoTo 0
+
+    WordApp.Selection.TypeText title & vbNewLine
+    WordApp.Selection.TypeParagraph
+
+    ' Копируем и вставляем таблицу
+    tableRange.Copy
+    WordApp.Selection.PasteExcelTable LinkedToExcel:=False, WordFormatting:=True, RTF:=False
+
+    ' ?? ВАЖНО: Перемещаем курсор за пределы таблицы
+    WordApp.Selection.Collapse 0
+    WordApp.Selection.TypeParagraph
+End Sub

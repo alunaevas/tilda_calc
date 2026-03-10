@@ -1,0 +1,152 @@
+Sub ExpandTableRows()
+    Dim ws As Worksheet
+    Dim insertRow As Integer
+    Dim rowCount As Integer
+    Dim lastRow As Integer
+    Dim formulaRow As Integer
+    Dim rng As Range
+    Dim floorCount As Integer
+    Dim i As Integer
+    
+    ' Устанавливаем рабочий лист
+    Set ws = ActiveSheet
+    
+    ' Определяем последнюю строку
+    lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).row
+    
+    ' Подсчитываем количество строк с номерами этажей
+    floorCount = 0
+    For i = 20 To lastRow
+        If IsNumeric(ws.Cells(i, 1).Value) Then
+            floorCount = floorCount + 1
+        End If
+    Next i
+    
+    ' Если этажей больше двух, удаляем лишние строки
+    If floorCount > 2 Then
+        For i = lastRow To 20 Step -1
+            If IsNumeric(ws.Cells(i, 1).Value) And floorCount > 2 Then
+                ws.Rows(i).Delete
+                floorCount = floorCount - 1
+            End If
+        Next i
+    End If
+    
+    ' Определяем количество вставляемых строк
+    rowCount = ws.Range("B5").Value - ws.Range("C5").Value - 1
+    
+    ' Если строк меньше 1, выходим
+    If rowCount < 1 Then Exit Sub
+    
+    ' Вставляем строки после 21-й строки
+    insertRow = 22 ' После 21-й строки
+    ws.Rows(insertRow & ":" & insertRow + rowCount - 1).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
+    
+    ' Копируем формулы и форматирование из 21-й строки в новые строки
+    ws.Rows("21").Copy
+    ws.Rows(insertRow & ":" & insertRow + rowCount - 1).PasteSpecial Paste:=xlPasteFormulas
+    ws.Rows(insertRow & ":" & insertRow + rowCount - 1).PasteSpecial Paste:=xlPasteFormats
+    Application.CutCopyMode = False
+    
+    ' Восстанавливаем чередующийся цвет строк (если применяется)
+    For i = insertRow To insertRow + rowCount - 1
+        If i Mod 2 = 0 Then
+            ws.Rows(i).Interior.Color = ws.Rows(20).Interior.Color
+        Else
+            ws.Rows(i).Interior.Color = ws.Rows(21).Interior.Color
+        End If
+    Next i
+    
+    ' Определяем строку для формул
+    formulaRow = 21 + ws.Range("B5").Value - ws.Range("C5").Value
+    
+    ' Обновляем формулы в G, H, I, Q, R, S в нужной строке
+    ws.Range("G" & formulaRow).Formula = "=MAX('Из коридоров'!$G$20:$G$" & (20 + ws.Range("B5").Value - ws.Range("C5").Value) & ")"
+    ws.Range("H" & formulaRow).Formula = "=MIN('Из коридоров'!$H$20:$H$" & (20 + ws.Range("B5").Value - ws.Range("C5").Value) & ")"
+    ws.Range("I" & formulaRow).Formula = "=MAX('Из коридоров'!$I$20:$I$" & (20 + ws.Range("B5").Value - ws.Range("C5").Value) & ")"
+    ws.Range("Q" & formulaRow).Formula = "=MAX('Из коридоров'!$Q$20:$Q$" & (20 + ws.Range("B5").Value - ws.Range("C5").Value) & ")"
+    ws.Range("R" & formulaRow).Formula = "=MIN('Из коридоров'!$R$20:$R$" & (20 + ws.Range("B5").Value - ws.Range("C5").Value) & ")"
+    ws.Range("S" & formulaRow).Formula = "=MAX('Из коридоров'!$S$20:$S$" & (20 + ws.Range("B5").Value - ws.Range("C5").Value) & ")"
+    
+    ' Добавляем расчет давления вентилятора дымоудаления
+    Dim bRow As Integer
+    bRow = 28 + ws.Range("B5").Value - ws.Range("C5").Value - 1
+    ws.Range("B" & bRow).Formula = "=B" & (22 + ws.Range("B5").Value - ws.Range("C5").Value - 1) & "-E" & (21 + ws.Range("B5").Value - ws.Range("C5").Value - 1) & "+9.81*(F5-F" & (21 + ws.Range("B5").Value - ws.Range("C5").Value - 1) & ")*(I" & (21 + ws.Range("B5").Value - ws.Range("C5").Value - 1) & "-B14)+B" & (26 + ws.Range("B5").Value - ws.Range("C5").Value - 1) & ""
+    
+    ' Добавляем расчет давления вентилятора компенсации
+    Dim pRow As Integer
+    pRow = 30 + ws.Range("B5").Value - ws.Range("C5").Value - 1
+    ws.Range("B" & pRow).Formula = "=ROUNDUP(L" & (21 + ws.Range("B5").Value - ws.Range("C5").Value - 1) & "-(-0.6*B12*(H10^2)/2-9.8*(G5-P20)*(B12-B13)),-1)+B" & (26 + ws.Range("B5").Value - ws.Range("C5").Value) & ""
+    
+    ' Функции оптимизации
+    Call OptimizeO9(ws)
+    Call OptimizeO10(ws)
+    Call OptimizeValveWidth(ws)
+    Call OptimizeValveHeight(ws)
+    
+    MsgBox "Расчет успешно произведен!", vbInformation
+End Sub
+
+Sub OptimizeO9(ws As Worksheet)
+    Dim oValue As Double
+    Dim rValue As Double
+    
+    ' Перебираем значения кратные 0.05 в диапазоне [0.15, 1.3]
+    For oValue = 0.15 To 1.3 Step 0.05
+        ws.Cells(9, 15).Value = oValue ' Запись в ячейку O9 (столбец 15)
+        rValue = ws.Cells(9, 18).Value ' Чтение из ячейки R9 (столбец 18)
+        
+        ' Проверяем диапазон значений R9
+        If rValue >= 9 And rValue <= 11 Then Exit Sub
+    Next oValue
+End Sub
+
+Sub OptimizeO10(ws As Worksheet)
+    Dim oValue As Double
+    Dim rValue As Double
+    
+    ' Перебираем значения кратные 0.05 в диапазоне [0.15, 1.3]
+    For oValue = 0.15 To 1.3 Step 0.05
+        ws.Cells(10, 15).Value = oValue ' Записываем текущее значение в ячейку O10 (столбец 15)
+        rValue = ws.Cells(10, 18).Value ' Читаем значение из ячейки R10 (столбец 18)
+        
+        ' Проверяем, находится ли значение в диапазоне [9, 11]
+        If rValue >= 9 And rValue <= 11 Then Exit Sub
+    Next oValue
+End Sub
+
+
+Sub OptimizeValveWidth(ws As Worksheet)
+   
+    Dim widthValue As Double
+    Dim row26 As Integer, row30 As Integer, row27 As Integer
+    
+    ' Вычисляем номера строк
+    row26 = 27 + ws.Range("B5").Value - ws.Range("C5").Value
+    row30 = 31 + ws.Range("B5").Value - ws.Range("C5").Value
+    row27 = 28 + ws.Range("B5").Value - ws.Range("C5").Value
+
+    ' Подбор ширины клапана дымоудаления
+    For widthValue = 0.3 To 1.3 Step 0.05
+        ws.Range("F" & row26).Value = widthValue
+        If ws.Range("F" & row30).Value <= 200 Then Exit Sub
+    Next widthValue
+End Sub
+
+Sub OptimizeValveHeight(ws As Worksheet)
+    Dim heightValue As Double
+    Dim row30 As Integer, row27 As Integer
+    
+    ' Вычисляем номера строк
+    row30 = 31 + ws.Range("B5").Value - ws.Range("C5").Value
+    row27 = 28 + ws.Range("B5").Value - ws.Range("C5").Value
+
+    ' Подбор высоты клапана подпора
+    For heightValue = 0.3 To 1# Step 0.05
+        ws.Range("K" & row27).Value = heightValue
+        If ws.Range("K" & row30).Value <= 200 Then Exit Sub
+    Next heightValue
+End Sub
+
+
+
