@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Таро ОВ: гадание для инженера</title>
+  <style>
+    :root {
+      --bg: #f5efe4;
+      --panel: rgba(255, 250, 242, 0.88);
+      --ink: #1f2a2e;
+      --accent: #c96c32;
+      --accent-dark: #8e4215;
+      --gold: #d9a441;
+      --line: rgba(31, 42, 46, 0.12);
+      --shadow: 0 20px 60px rgba(77, 51, 24, 0.18);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Trebuchet MS", "Verdana", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(217, 164, 65, 0.28), transparent 28%),
+        radial-gradient(circle at top right, rgba(201, 108, 50, 0.25), transparent 22%),
+        linear-gradient(160deg, #f8f3ea 0%, #efe0c4 48%, #ead7b0 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .game {
+      width: min(980px, 100%);
+      background: var(--panel);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.55);
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .hero {
+      padding: 28px 28px 12px;
+      text-align: center;
+    }
+
+    .eyebrow {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(217, 164, 65, 0.18);
+      color: var(--accent-dark);
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 14px 0 10px;
+      font-size: clamp(32px, 5vw, 58px);
+      line-height: 0.95;
+    }
+
+    .subtitle {
+      max-width: 700px;
+      margin: 0 auto;
+      font-size: 18px;
+      line-height: 1.5;
+      opacity: 0.88;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 1.1fr;
+      gap: 24px;
+      padding: 18px 28px 32px;
+    }
+
+    .deck-zone,
+    .result {
+      background: rgba(255, 255, 255, 0.56);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 22px;
+    }
+
+    .deck-zone {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      min-height: 520px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .deck-zone::before,
+    .deck-zone::after {
+      content: "";
+      position: absolute;
+      border-radius: 50%;
+      opacity: 0.18;
+      pointer-events: none;
+    }
+
+    .deck-zone::before {
+      width: 220px;
+      height: 220px;
+      background: var(--gold);
+      top: -80px;
+      left: -80px;
+    }
+
+    .deck-zone::after {
+      width: 180px;
+      height: 180px;
+      background: var(--accent);
+      bottom: -70px;
+      right: -40px;
+    }
+
+    .card-wrap {
+      width: min(320px, 84%);
+      aspect-ratio: 3 / 5;
+      perspective: 1200px;
+      z-index: 1;
+    }
+
+    .card {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.85s ease;
+      cursor: pointer;
+    }
+
+    .card.revealed {
+      transform: rotateY(180deg) rotateZ(-1.5deg);
+    }
+
+    .face {
+      position: absolute;
+      inset: 0;
+      border-radius: 26px;
+      backface-visibility: hidden;
+      overflow: hidden;
+      box-shadow: 0 16px 35px rgba(31, 42, 46, 0.15);
+    }
+
+    .back {
+      background:
+        linear-gradient(145deg, #9e4e21, #cf7d41),
+        linear-gradient(0deg, rgba(255,255,255,0.08), rgba(255,255,255,0.08));
+      color: #fff8ea;
+      border: 3px solid rgba(255, 242, 210, 0.6);
+      display: grid;
+      place-items: center;
+      padding: 18px;
+    }
+
+    .back-inner {
+      width: 100%;
+      height: 100%;
+      border: 2px solid rgba(255, 244, 223, 0.55);
+      border-radius: 20px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      background:
+        radial-gradient(circle, rgba(255,255,255,0.12) 0 14%, transparent 15% 100%),
+        linear-gradient(45deg, rgba(255,255,255,0.07) 25%, transparent 25% 50%, rgba(255,255,255,0.07) 50% 75%, transparent 75% 100%);
+      background-size: 100% 100%, 26px 26px;
+    }
+
+    .back-symbol {
+      font-size: clamp(56px, 10vw, 92px);
+      line-height: 1;
+    }
+
+    .back-title {
+      font-size: 22px;
+      font-weight: 700;
+      margin-top: 14px;
+    }
+
+    .front {
+      transform: rotateY(180deg);
+      background: linear-gradient(180deg, #fff9ee, #f2e2c3);
+      border: 3px solid rgba(142, 66, 21, 0.16);
+      color: var(--ink);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .front-top {
+      padding: 16px 18px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent-dark);
+    }
+
+    .front-illustration {
+      flex: 1;
+      display: grid;
+      place-items: center;
+      padding: 10px 24px;
+      text-align: center;
+      border-top: 1px solid rgba(31, 42, 46, 0.08);
+      border-bottom: 1px solid rgba(31, 42, 46, 0.08);
+      background:
+        radial-gradient(circle at 50% 30%, rgba(217, 164, 65, 0.3), transparent 32%),
+        linear-gradient(180deg, rgba(255,255,255,0.55), rgba(255,255,255,0.1));
+    }
+
+    .front-emoji {
+      font-size: clamp(72px, 10vw, 108px);
+      margin-bottom: 12px;
+    }
+
+    .front-phrase {
+      font-size: 18px;
+      line-height: 1.35;
+      font-weight: 700;
+    }
+
+    .front-bottom {
+      padding: 14px 18px 18px;
+      text-align: center;
+      font-size: 14px;
+      color: rgba(31, 42, 46, 0.74);
+    }
+
+    .button-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+      z-index: 1;
+    }
+
+    button {
+      border: 0;
+      border-radius: 999px;
+      padding: 14px 20px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+    }
+
+    .primary {
+      background: linear-gradient(135deg, var(--accent), #e78a4d);
+      color: white;
+      box-shadow: 0 12px 24px rgba(201, 108, 50, 0.28);
+    }
+
+    .secondary {
+      background: rgba(255, 255, 255, 0.7);
+      color: var(--ink);
+      border: 1px solid var(--line);
+    }
+
+    .hint {
+      text-align: center;
+      max-width: 320px;
+      font-size: 15px;
+      line-height: 1.45;
+      color: rgba(31, 42, 46, 0.78);
+      z-index: 1;
+    }
+
+    .result {
+      min-height: 520px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .result h2 {
+      margin: 0;
+      font-size: 28px;
+    }
+
+    .reading {
+      display: grid;
+      gap: 14px;
+    }
+
+    .reading-block {
+      padding: 16px 18px;
+      background: rgba(255, 250, 242, 0.82);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+    }
+
+    .reading-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent-dark);
+      margin-bottom: 8px;
+    }
+
+    .reading-text {
+      margin: 0;
+      font-size: 17px;
+      line-height: 1.5;
+    }
+
+    .meters {
+      display: grid;
+      gap: 12px;
+      margin-top: auto;
+    }
+
+    .meter-label {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 14px;
+      margin-bottom: 6px;
+    }
+
+    .meter-track {
+      width: 100%;
+      height: 12px;
+      border-radius: 999px;
+      background: rgba(31, 42, 46, 0.09);
+      overflow: hidden;
+    }
+
+    .meter-fill {
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #d9a441, #c96c32);
+      transition: width 0.55s ease;
+    }
+
+    .muted {
+      color: rgba(31, 42, 46, 0.68);
+    }
+
+    @media (max-width: 860px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .deck-zone,
+      .result {
+        min-height: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="game">
+    <section class="hero">
+      <div class="eyebrow">Мистический отдел ОВ и ВК</div>
+      <h1>Таро отопления и вентиляции</h1>
+      <p class="subtitle">
+        Нажмите на карту и узнайте, что сегодня сулит вам великий дух котельной:
+        баланс системы, сквозняк судьбы или внезапное озарение от приточной установки.
+      </p>
+    </section>
+
+    <section class="layout">
+      <div class="deck-zone">
+        <div class="card-wrap">
+          <div class="card" id="tarotCard" aria-live="polite">
+            <div class="face back">
+              <div class="back-inner">
+                <div>
+                  <div class="back-symbol">♨</div>
+                  <div class="back-title">Колода ОВ</div>
+                  <div>Потяни карту и доверься тепловому потоку</div>
+                </div>
+              </div>
+            </div>
+            <div class="face front">
+              <div class="front-top">
+                <span id="cardArcana">Старший аркан</span>
+                <span id="cardNumber">№ 00</span>
+              </div>
+              <div class="front-illustration">
+                <div>
+                  <div class="front-emoji" id="cardEmoji">🔥</div>
+                  <div class="front-phrase" id="cardName">Великий Радиатор</div>
+                </div>
+              </div>
+              <div class="front-bottom" id="cardTagline">Да будет тепло в проекте твоём.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="button-row">
+          <button class="primary" id="drawButton">Вытянуть карту</button>
+          <button class="secondary" id="resetButton">Спрятать обратно</button>
+        </div>
+
+        <p class="hint">
+          Игра шуточная: никакие нормы не заменяет, но настроение инженеру поднимает.
+        </p>
+      </div>
+
+      <aside class="result">
+        <div>
+          <h2 id="resultTitle">Прогноз пока скрыт</h2>
+          <p class="muted" id="resultIntro">
+            Вытащите карту, чтобы получить предсказание по отоплению, вентиляции и уровню офисной магии.
+          </p>
+        </div>
+
+        <div class="reading">
+          <div class="reading-block">
+            <div class="reading-label">Знак свыше</div>
+            <p class="reading-text" id="resultMeaning">
+              Сегодня Вселенная молчит. Видимо, ждёт, пока вы нажмёте кнопку.
+            </p>
+          </div>
+
+          <div class="reading-block">
+            <div class="reading-label">Совет мастера</div>
+            <p class="reading-text" id="resultAdvice">
+              Пока совет один: не спорьте с термостатом, он всё равно считает себя главным.
+            </p>
+          </div>
+
+          <div class="reading-block">
+            <div class="reading-label">Симптом дня</div>
+            <p class="reading-text" id="resultSymptom">
+              Диагностика не началась. Пациент: котельная аура.
+            </p>
+          </div>
+        </div>
+
+        <div class="meters">
+          <div>
+            <div class="meter-label">
+              <span>Уровень тепловой удачи</span>
+              <strong id="heatValue">0%</strong>
+            </div>
+            <div class="meter-track">
+              <div class="meter-fill" id="heatMeter" style="width: 0%;"></div>
+            </div>
+          </div>
+          <div>
+            <div class="meter-label">
+              <span>Вероятность сквозняка</span>
+              <strong id="draftValue">0%</strong>
+            </div>
+            <div class="meter-track">
+              <div class="meter-fill" id="draftMeter" style="width: 0%;"></div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    const cards = [
+      {
+        arcana: "Старший аркан",
+        number: "№ 01",
+        name: "Великий Радиатор",
+        emoji: "🔥",
+        tagline: "Греет не только комнату, но и профессиональное самолюбие.",
+        title: "Выпал Великий Радиатор",
+        meaning: "Сегодня всё пойдёт по тёплому контуру: идеи циркулируют, заказчик мягче обычного, а батареи в душе наконец-то сбалансированы.",
+        advice: "Говорите уверенно. Даже если обсуждение зашло в тупик, произнесите «нужна гидравлическая увязка» и выглядите мудрецом.",
+        symptom: "Неожиданное желание проверить, не перекрыт ли где-нибудь байпас.",
+        heat: 91,
+        draft: 14
+      },
+      {
+        arcana: "Старший аркан",
+        number: "№ 02",
+        name: "Жрица Приточки",
+        emoji: "🌬️",
+        tagline: "Она знает, где взять свежий воздух и как подать это в пояснительной.",
+        title: "Выпала Жрица Приточки",
+        meaning: "День благоприятен для свежих мыслей. Всё, что вчера казалось душным совещанием, сегодня можно превратить в рабочую схему с нормальной кратностью.",
+        advice: "Откройте окно возможностей, но не забывайте про фильтр. Не каждая идея должна поступать в помещение без очистки.",
+        symptom: "Лёгкая турбулентность в голове и внезапная тяга рисовать воздуховоды красивее, чем требуется.",
+        heat: 72,
+        draft: 29
+      },
+      {
+        arcana: "Старший аркан",
+        number: "№ 03",
+        name: "Император Котельной",
+        emoji: "👑",
+        tagline: "Правит горелками, насосами и дисциплиной на объекте.",
+        title: "Выпал Император Котельной",
+        meaning: "Сегодня вы контролируете систему. Даже хаос в чатах выглядит как тщательно спланированный режим работы.",
+        advice: "Ставьте задачи с видом человека, который лично знаком с каждым запорным клапаном на объекте.",
+        symptom: "Непреодолимое желание подписать любую таблицу словами «утверждаю тепловым указом».",
+        heat: 84,
+        draft: 22
+      },
+      {
+        arcana: "Младший аркан",
+        number: "№ 04",
+        name: "Тройка Сквозняков",
+        emoji: "🪟",
+        tagline: "Окно было открыто не зря. Но и не вовремя тоже.",
+        title: "Выпала Тройка Сквозняков",
+        meaning: "Не всё потеряно, но кто-то снова сделал микропроветривание главным инженером проекта. День принесёт лёгкий хаос и бодрящую прохладу.",
+        advice: "Проверьте исходные данные дважды. Сквозняк любит выдувать именно те цифры, которые потом срочно понадобятся.",
+        symptom: "Подозрение, что холодно не в помещении, а в техническом задании.",
+        heat: 38,
+        draft: 87
+      },
+      {
+        arcana: "Младший аркан",
+        number: "№ 05",
+        name: "Семёрка Фильтров",
+        emoji: "🧰",
+        tagline: "Отсеивает пыль, лишние правки и сомнительные советы.",
+        title: "Выпала Семёрка Фильтров",
+        meaning: "Ваш день про очистку. Отделяйте важное от шумов, иначе в энергетический баланс попадёт чужая суета.",
+        advice: "Соглашайтесь не на всё. Иногда лучший проектный шаг это вежливо снять с системы лишнюю нагрузку.",
+        symptom: "Повышенная чувствительность к словам «давайте ещё одну небольшую правку».",
+        heat: 63,
+        draft: 41
+      },
+      {
+        arcana: "Младший аркан",
+        number: "№ 06",
+        name: "Дурак с Термостатом",
+        emoji: "🤹",
+        tagline: "Уверен, что +27°C это компромисс.",
+        title: "Выпал Дурак с Термостатом",
+        meaning: "Сегодня Вселенная предупреждает: кто-то рядом собирается регулировать сложную систему методом хаотичных нажатий.",
+        advice: "Не поддавайтесь панике. Если ситуация нагревается, сначала проверьте настройки, а уже потом человеческий фактор.",
+        symptom: "Резкие перепады настроения, как у помещения с плохо настроенной автоматикой.",
+        heat: 56,
+        draft: 66
+      },
+      {
+        arcana: "Спецвыпуск",
+        number: "№ 07",
+        name: "Колесо Рециркуляции",
+        emoji: "♻️",
+        tagline: "Всё возвращается. Даже те вопросы, на которые вы уже отвечали.",
+        title: "Выпало Колесо Рециркуляции",
+        meaning: "День цикличен. Вернутся старые письма, знакомые замечания и чувство, что этот узел вы уже согласовывали в прошлой жизни.",
+        advice: "Используйте повтор как преимущество. У вас уже есть ответы, просто подайте их как мудрость, а не дежавю.",
+        symptom: "Периодические приступы фразы «это уже было в предыдущей редакции».",
+        heat: 68,
+        draft: 33
+      },
+      {
+        arcana: "Спецвыпуск",
+        number: "№ 08",
+        name: "Отшельник Дефлектора",
+        emoji: "🛖",
+        tagline: "Стоит на крыше и знает про тягу больше всех.",
+        title: "Выпал Отшельник Дефлектора",
+        meaning: "Хороший день для уединённой инженерной мудрости. Лучше всего удаются решения, принятые подальше от общего чата.",
+        advice: "Спрячьтесь на час в тишину и спокойно доделайте то, что коллективный разум только усложняет.",
+        symptom: "Желание уйти на кровлю, смотреть вдаль и говорить загадками про аэродинамику.",
+        heat: 59,
+        draft: 24
+      }
+    ];
+
+    const tarotCard = document.getElementById("tarotCard");
+    const drawButton = document.getElementById("drawButton");
+    const resetButton = document.getElementById("resetButton");
+
+    const cardArcana = document.getElementById("cardArcana");
+    const cardNumber = document.getElementById("cardNumber");
+    const cardEmoji = document.getElementById("cardEmoji");
+    const cardName = document.getElementById("cardName");
+    const cardTagline = document.getElementById("cardTagline");
+
+    const resultTitle = document.getElementById("resultTitle");
+    const resultIntro = document.getElementById("resultIntro");
+    const resultMeaning = document.getElementById("resultMeaning");
+    const resultAdvice = document.getElementById("resultAdvice");
+    const resultSymptom = document.getElementById("resultSymptom");
+    const heatMeter = document.getElementById("heatMeter");
+    const draftMeter = document.getElementById("draftMeter");
+    const heatValue = document.getElementById("heatValue");
+    const draftValue = document.getElementById("draftValue");
+
+    function drawCard() {
+      const picked = cards[Math.floor(Math.random() * cards.length)];
+
+      cardArcana.textContent = picked.arcana;
+      cardNumber.textContent = picked.number;
+      cardEmoji.textContent = picked.emoji;
+      cardName.textContent = picked.name;
+      cardTagline.textContent = picked.tagline;
+
+      resultTitle.textContent = picked.title;
+      resultIntro.textContent = "Официальное шуточное заключение энергетических сил на текущий день.";
+      resultMeaning.textContent = picked.meaning;
+      resultAdvice.textContent = picked.advice;
+      resultSymptom.textContent = picked.symptom;
+      heatMeter.style.width = picked.heat + "%";
+      draftMeter.style.width = picked.draft + "%";
+      heatValue.textContent = picked.heat + "%";
+      draftValue.textContent = picked.draft + "%";
+
+      tarotCard.classList.add("revealed");
+    }
+
+    function resetCard() {
+      tarotCard.classList.remove("revealed");
+      resultTitle.textContent = "Прогноз пока скрыт";
+      resultIntro.textContent = "Вытащите карту, чтобы получить предсказание по отоплению, вентиляции и уровню офисной магии.";
+      resultMeaning.textContent = "Сегодня Вселенная молчит. Видимо, ждёт, пока вы нажмёте кнопку.";
+      resultAdvice.textContent = "Пока совет один: не спорьте с термостатом, он всё равно считает себя главным.";
+      resultSymptom.textContent = "Диагностика не началась. Пациент: котельная аура.";
+      heatMeter.style.width = "0%";
+      draftMeter.style.width = "0%";
+      heatValue.textContent = "0%";
+      draftValue.textContent = "0%";
+    }
+
+    drawButton.addEventListener("click", drawCard);
+    resetButton.addEventListener("click", resetCard);
+    tarotCard.addEventListener("click", () => {
+      if (tarotCard.classList.contains("revealed")) {
+        resetCard();
+      } else {
+        drawCard();
+      }
+    });
+  </script>
+</body>
+</html>
