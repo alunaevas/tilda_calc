@@ -1,0 +1,391 @@
+const input = $json.body ?? $json;
+const meta = input.meta || {};
+
+if (meta.module && meta.module !== 'calc_smoke_corridor') {
+  return [
+    {
+      json: {
+        ignored: true,
+        meta,
+        statusMessage: 'Запрос относится к другому модулю.',
+        statusIsError: false,
+      },
+    },
+  ];
+}
+
+const source = input.inputs || {};
+
+function toNum(value, fallback) {
+  const normalized = String(value == null ? '' : value).replace(',', '.').trim();
+  const num = Number(normalized);
+  return Number.isFinite(num) ? num : fallback;
+}
+
+function round(value, digits) {
+  const factor = 10 ** (digits || 0);
+  return Math.round(value * factor) / factor;
+}
+
+function roundUp(value, step) {
+  return Math.ceil(value / step) * step;
+}
+
+function safeDiv(a, b, fallback) {
+  return Math.abs(b) < 1e-9 ? fallback : a / b;
+}
+
+function safeSqrt(value) {
+  return Math.sqrt(Math.max(0, value));
+}
+
+function normalizeCityName(name) {
+  return String(name || '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .replace(/\n/g, ' ')
+    .replace(/\u00a0/g, ' ')
+    .replace(/\s*-\s*/g, '-')
+    .trim();
+}
+
+function approxIndex(arr, value) {
+  if (value <= arr[0]) return 0;
+  for (let i = arr.length - 1; i >= 0; i -= 1) {
+    if (value >= arr[i]) return i;
+  }
+  return 0;
+}
+
+const WIND_SPEEDS = [2, 2.5, 3, 4, 5, 6, 7, 8, 10];
+const WIND_ROWS = [
+  { height: 10, factors: [1, 1, 1, 1, 1, 1, 1, 1, 1] },
+  { height: 50, factors: [2.3, 1.8, 1.8, 1.5, 1.4, 1.4, 1.3, 1.2, 1.2] },
+  { height: 100, factors: [2.8, 2.4, 2.2, 1.9, 1.8, 1.7, 1.5, 1.4, 1.2] },
+  { height: 150, factors: [3.2, 2.8, 2.5, 2.1, 2, 1.8, 1.7, 1.6, 1.4] },
+  { height: 200, factors: [3.5, 3, 2.7, 2.4, 2.1, 2, 1.8, 1.7, 1.4] },
+  { height: 250, factors: [3.8, 3.2, 2.8, 2.5, 2.3, 2.1, 1.9, 1.8, 1.5] },
+  { height: 300, factors: [3.8, 3.4, 3, 2.6, 2.4, 2.2, 2, 1.9, 1.6] },
+  { height: 350, factors: [4, 3.4, 3, 2.6, 2.4, 2.3, 2.1, 2, 1.7] },
+  { height: 400, factors: [4, 3.4, 3.2, 2.8, 2.5, 2.3, 2.1, 2.1, 1.8] },
+  { height: 450, factors: [4, 3.6, 3.2, 2.9, 2.6, 2.4, 2.2, 2.2, 1.8] },
+  { height: 500, factors: [4, 3.6, 3.2, 2.9, 2.6, 2.5, 2.3, 2.2, 1.9] },
+];
+
+function windFactor(height, baseWind) {
+  if (height < 10) return 1;
+  const col = approxIndex(WIND_SPEEDS, baseWind);
+  if (height <= WIND_ROWS[0].height) return WIND_ROWS[0].factors[col];
+  if (height >= WIND_ROWS[WIND_ROWS.length - 1].height) return WIND_ROWS[WIND_ROWS.length - 1].factors[col];
+  const rowIndex = approxIndex(WIND_ROWS.map((row) => row.height), height);
+  const low = WIND_ROWS[rowIndex];
+  const high = WIND_ROWS[Math.min(rowIndex + 1, WIND_ROWS.length - 1)];
+  if (low.height === high.height) return low.factors[col];
+  return low.factors[col] + (high.factors[col] - low.factors[col]) * (height - low.height) / (high.height - low.height);
+}
+
+function getMaterialFriction(material) {
+  if (material === 'Кирпич') return 0.1;
+  if (material === 'Бетон') return 0.05;
+  return 0.02;
+}
+
+function optimizeRange(start, end, step, fallback, predicate) {
+  for (let value = start; value <= end + 1e-9; value += step) {
+    const candidate = round(value, 2);
+    if (predicate(candidate)) return candidate;
+  }
+  return fallback;
+}
+
+const climate = source.climate || {};
+const inputs = {
+  objectName: String(source.objectName || '').trim(),
+  city: String(source.city || '').trim(),
+  climate: {
+    city: String(climate.city || source.city || '').trim(),
+    cold: toNum(climate.cold, -32),
+    warm: toNum(climate.warm, 26),
+    wind: toNum(climate.wind, 4),
+  },
+  B5: Math.max(1, Math.round(toNum(source.B5, 3))),
+  C5: Math.max(1, Math.round(toNum(source.C5, 1))),
+  D5: toNum(source.D5, 3),
+  E5: toNum(source.E5, 16),
+  F5: toNum(source.F5, 50),
+  G5: toNum(source.G5, 3),
+  H5: toNum(source.H5, 2.7),
+  I5: toNum(source.I5, 2.1),
+  J5: toNum(source.J5, 0.9),
+  K5: toNum(source.K5, 20),
+  L5: toNum(source.L5, 25),
+  M5: toNum(source.M5, 41),
+  N5: toNum(source.N5, 7),
+  O5: toNum(source.O5, 0.5),
+  P5: source.P5 || 'прямолинейная',
+  Q5: source.Q5 || 'административное',
+  R5: source.R5 || 'ПРВ',
+  K9: source.K9 || 'Металл',
+  K10: source.K10 || 'Металл',
+  N10input: toNum(source.N10input, 0.6),
+  B27: toNum(source.B27, 200),
+  B28: toNum(source.B28, 200),
+  F25: Math.max(1, Math.round(toNum(source.F25, 1))),
+  K25: Math.max(1, Math.round(toNum(source.K25, 1))),
+  G29: toNum(source.G29, 0.7),
+  G30: toNum(source.G30, 0.5),
+  L29: toNum(source.L29, 0.5),
+  L30: toNum(source.L30, 0.5),
+};
+
+if (inputs.I5 > inputs.H5) {
+  return [
+    {
+      json: {
+        meta,
+        statusMessage: 'Высота дверного проема больше высоты коридора.',
+        statusIsError: true,
+      },
+    },
+  ];
+}
+
+function computeModel(currentInputs, vars) {
+  const livingCoeff = normalizeCityName(currentInputs.Q5) === 'жилое' ? 0.96 : 1.2;
+  const E10 = currentInputs.climate.warm;
+  const F10 = currentInputs.climate.cold;
+  const G10 = round(currentInputs.climate.wind * windFactor(currentInputs.F5, currentInputs.climate.wind), 1);
+  const H10 = round(currentInputs.climate.wind * windFactor(currentInputs.G5, currentInputs.climate.wind), 1);
+  const B8 = currentInputs.R5 === 'ПРВ'
+    ? (273 + currentInputs.E5) + 940 * Math.exp(0.0047 * currentInputs.M5 - 0.141)
+    : (273 + currentInputs.E5) + 224 * (currentInputs.N5 ** 0.528);
+  const B9 = 0.8 * B8;
+  const corridorMix = 1.22 * (B9 - (273 + currentInputs.E5)) * (2 * 0.6 * currentInputs.H5 + currentInputs.K5 / currentInputs.L5) / currentInputs.L5 * (1 - Math.exp(-0.58 * currentInputs.L5 / (2 * 0.6 * currentInputs.H5 + currentInputs.K5 / currentInputs.L5)));
+  let corridorStart;
+  if (currentInputs.P5 === 'угловая') corridorStart = (-0.0488 * (currentInputs.O5 ** 2) - 0.8243 * currentInputs.O5 + 77.346) + (273 + currentInputs.E5);
+  else if (currentInputs.P5 === 'прямолинейная') corridorStart = (-0.0368 * (currentInputs.O5 ** 2) - 3.9259 * currentInputs.O5 + 119.81) + (273 + currentInputs.E5);
+  else corridorStart = (-0.0067 * (currentInputs.O5 ** 2) - 4.3122 * currentInputs.O5 + 88.453) + (273 + currentInputs.E5);
+  const B10 = corridorStart + corridorMix;
+  const B11 = 353 / (273 + E10);
+  const B12 = 353 / (273 + F10);
+  const B13 = 353 / (273 + currentInputs.E5);
+  const B14 = 353 / (273 + (currentInputs.E5 + E10) / 2);
+  const B15 = 353 / (273 + (currentInputs.E5 + F10) / 2);
+  const B16 = 353 / B10;
+  const E15 = 0;
+  const F15 = 1;
+  const G15 = round(E15 * 3600 / (353 / F15), -2);
+  const N9 = vars.smokeWidth + 0.05;
+  const O9 = vars.smokeDepth;
+  const P9 = safeDiv(2 * N9 * O9, N9 + O9, 0);
+  const Q9 = N9 * O9;
+  const N10 = currentInputs.N10input;
+  const O10 = vars.compDepth;
+  const P10 = safeDiv(2 * N10 * O10, N10 + O10, 0);
+  const Q10 = N10 * O10;
+  const M9 = getMaterialFriction(currentInputs.K9);
+  const M10 = getMaterialFriction(currentInputs.K10);
+  const F29 = vars.smokeWidth;
+  const F30 = currentInputs.H5 - currentInputs.I5 - 0.1;
+  const K29 = N10 - 0.05;
+  const K30 = vars.compHeight;
+  const F31 = Math.max((F29 - 0.026) * (F30 - 0.086), 0.0001);
+  const G31 = currentInputs.F25 === 2 ? Math.max((currentInputs.G29 - 0.026) * (currentInputs.G30 - 0.086), 0.0001) : null;
+  const K31 = Math.max((K29 - 0.026) * (K30 - 0.086), 0.0001);
+  const L31 = currentInputs.K25 === 2 ? Math.max((currentInputs.L29 - 0.026) * (currentInputs.L30 - 0.086), 0.0001) : null;
+  const targetFlow = livingCoeff * currentInputs.J5 * (currentInputs.I5 ** 1.5);
+  const F27 = currentInputs.F25 === 1 ? targetFlow : targetFlow * safeDiv(F31, F31 + G31, 0);
+  const G27 = currentInputs.F25 === 1 ? null : targetFlow * safeDiv(G31, F31 + G31, 0);
+  const F28 = F27 * 3600 / B16;
+  const F32 = F27 / B16 / F31;
+  const F33 = 4 * B16 * (F32 ** 2) / 2;
+  const K27 = currentInputs.K25 === 1 ? targetFlow : targetFlow * safeDiv(K31, K31 + L31, 0);
+  const K32 = K27 / B15 / K31;
+  const K33 = 4 * B15 * (K32 ** 2) / 2;
+  const calcFloors = Math.max(1, currentInputs.B5 - currentInputs.C5 + 1);
+  const smokeRows = [];
+  const compRows = [];
+  const G20 = G15 < targetFlow * 3600 / (353 / B10) ? targetFlow : E15;
+  const H20 = E15 < G20 ? B10 : F15;
+  const I20 = 353 / H20;
+  const P20 = (currentInputs.C5 - 1) * currentInputs.D5;
+  const firstHeight = P20;
+  const row0 = {
+    A: currentInputs.C5,
+    F: firstHeight,
+    P: firstHeight,
+    B: 0.4 * B11 * (G10 ** 2) - 9.81 * firstHeight * (B11 - B14),
+    C: -0.3 * B11 * (G10 ** 2) - 9.81 * firstHeight * (B11 - B14),
+  };
+  row0.D = (row0.B + row0.C) / 2;
+  row0.E = row0.B - F33;
+  row0.G = G20;
+  row0.H = H20;
+  row0.I = I20;
+  row0.J = F32;
+  row0.K = 0;
+  row0.L = (0.4 * B12 * (G10 ** 2) - 9.81 * firstHeight * (B12 - B15)) * -1;
+  row0.M = (-0.3 * B12 * (G10 ** 2) - 9.81 * firstHeight * (B12 - B15)) * -1;
+  row0.N = (row0.L + row0.M) / 2;
+  row0.O = row0.L - K33;
+  row0.Q = G20;
+  row0.R = 273 + (F10 + currentInputs.E5) / 2;
+  row0.S = 353 / row0.R;
+  row0.T = K32;
+  row0.U = null;
+  smokeRows.push(row0);
+  compRows.push(row0);
+
+  for (let index = 1; index < calcFloors; index += 1) {
+    const prev = smokeRows[index - 1];
+    const floorNo = currentInputs.C5 + index;
+    const height = (floorNo - 1) * currentInputs.D5;
+    const baseB = 0.4 * B11 * (G10 ** 2) - 9.81 * height * (B11 - B14);
+    const baseC = -0.3 * B11 * (G10 ** 2) - 9.81 * height * (B11 - B14);
+    const baseD = (baseB + baseC) / 2;
+    const baseE = round(prev.E - (M9 * currentInputs.D5 / P9) * (prev.I * (prev.J ** 2) / 2), 2);
+    const smokeLeak = currentInputs.F25 === 1
+      ? safeSqrt((baseD - baseE) / (12000 / (F31 ** 2)))
+      : safeSqrt((baseD - baseE) / (12000 / (F31 ** 2))) + safeSqrt((baseD - baseE) / (12000 / (G31 ** 2)));
+    const baseG = prev.G + smokeLeak;
+    const baseH = ((273 + currentInputs.E5) * (baseG - G20) + H20 * G20) / (G20 + (baseG - G20));
+    const baseI = 353 / baseH;
+    const baseJ = round(baseG / (N9 * O9 * baseI), 2);
+    const baseL = (0.4 * B12 * (G10 ** 2) - 9.81 * height * (B12 - B15)) * -1;
+    const baseM = (-0.3 * B12 * (G10 ** 2) - 9.81 * height * (B12 - B15)) * -1;
+    const baseN = (baseL + baseM) / 2;
+    const baseO = round(prev.O - (M10 * currentInputs.D5 / P10) * (prev.S * (prev.T ** 2) / 2), 2);
+    const baseQ = prev.Q + (currentInputs.K25 === 1
+      ? safeSqrt((baseD - baseE) / (12000 / (K31 ** 2)))
+      : safeSqrt((baseD - baseE) / (12000 / (K31 ** 2))) + safeSqrt((baseD - baseE) / (12000 / (L31 ** 2))));
+    const baseR = 273 + (F10 + currentInputs.E5) / 2;
+    const baseS = 353 / baseR;
+    const baseT = round(baseQ / (N10 * O10 * baseS), 2);
+    const baseU = currentInputs.K25 === 1
+      ? safeSqrt((baseN - baseO) / (12000 / (K31 ** 2)))
+      : safeSqrt((baseN - baseO) / (12000 / (K31 ** 2))) + safeSqrt((baseN - baseO) / (12000 / (L31 ** 2)));
+    const row = { A: floorNo, B: baseB, C: baseC, D: baseD, E: baseE, F: height, G: baseG, H: baseH, I: baseI, J: baseJ, K: smokeLeak, L: baseL, M: baseM, N: baseN, O: baseO, P: height, Q: baseQ, R: baseR, S: baseS, T: baseT, U: baseU };
+    smokeRows.push(row);
+    compRows.push(row);
+  }
+
+  const last = smokeRows[smokeRows.length - 1];
+  const G23 = Math.max(...smokeRows.map((row) => row.G));
+  const H23 = Math.min(...smokeRows.map((row) => row.H));
+  const I23 = Math.max(...smokeRows.map((row) => row.I));
+  const Q23 = Math.max(...compRows.map((row) => row.Q));
+  const R23 = Math.min(...compRows.map((row) => row.R));
+  const S23 = Math.max(...compRows.map((row) => row.S));
+  const B23 = 0.4 * B11 * (G10 ** 2) - 9.81 * currentInputs.F5 * (B11 - B14);
+  const B25 = roundUp(3600 * G23 / I23, 10);
+  const B26 = roundUp(3600 * Q23 / B15, 10);
+  const R9 = B25 / 3600 / Q9;
+  const R10 = B26 / 3600 / Q10;
+  const B29 = B23 - last.E + 9.81 * (currentInputs.F5 - last.F) * (last.I - B14) + currentInputs.B27;
+  const B30 = roundUp(1.2 * B29 / I23, 10);
+  const B31 = roundUp(last.L - (-0.6 * B12 * (H10 ** 2) / 2 - 9.8 * (currentInputs.G5 - P20) * (B12 - B13)), 10) + currentInputs.B28;
+
+  return {
+    inputs: currentInputs,
+    vars,
+    climate: { E10, F10, G10, H10, baseWind: currentInputs.climate.wind },
+    products: { B8, B9, B10, B11, B12, B13, B14, B15, B16, E15, F15, G15 },
+    smokeRows,
+    compRows,
+    summary: {
+      B23,
+      G23,
+      H23,
+      I23,
+      Q23,
+      R23,
+      S23,
+      B25,
+      B26,
+      B29,
+      B30,
+      B31,
+      U24: compRows.reduce((sum, row) => sum + (row.U || 0), 0),
+    },
+    shaft: {
+      M9,
+      N9,
+      O9,
+      P9,
+      Q9,
+      R9,
+      M10,
+      N10,
+      O10,
+      P10,
+      Q10,
+      R10,
+    },
+    valves: {
+      F27,
+      G27,
+      F28,
+      G28: currentInputs.F25 === 2 ? G27 * 3600 / B16 : null,
+      F29,
+      F30,
+      G29: currentInputs.G29,
+      G30: currentInputs.G30,
+      F31,
+      G31,
+      F32,
+      G32: currentInputs.F25 === 2 ? G27 / B16 / G31 : null,
+      F33,
+      G33: currentInputs.F25 === 2 ? 4 * B16 * ((G27 / B16 / G31) ** 2) / 2 : null,
+      K27,
+      L27: currentInputs.K25 === 1 ? null : targetFlow * safeDiv(L31, K31 + L31, 0),
+      K28: K27 * 3600 / B15,
+      L28: currentInputs.K25 === 2 ? (targetFlow * safeDiv(L31, K31 + L31, 0)) * 3600 / B15 : null,
+      K29,
+      K30,
+      L29: currentInputs.L29,
+      L30: currentInputs.L30,
+      K31,
+      L31,
+      K32,
+      L32: currentInputs.K25 === 2 ? (targetFlow * safeDiv(L31, K31 + L31, 0)) / B15 / L31 : null,
+      K33,
+      L33: currentInputs.K25 === 2 ? 4 * B15 * ((((targetFlow * safeDiv(L31, K31 + L31, 0)) / B15 / L31)) ** 2) / 2 : null,
+    },
+  };
+}
+
+function optimizeModel(currentInputs) {
+  const vars = { smokeWidth: 1.05, smokeDepth: 0.45, compDepth: 0.4, compHeight: 0.65 };
+  for (let iter = 0; iter < 5; iter += 1) {
+    vars.smokeDepth = optimizeRange(0.15, 1.3, 0.05, vars.smokeDepth, (candidate) => {
+      const calc = computeModel(currentInputs, { smokeWidth: vars.smokeWidth, smokeDepth: candidate, compDepth: vars.compDepth, compHeight: vars.compHeight });
+      return calc.shaft.R9 >= 9 && calc.shaft.R9 <= 11;
+    });
+    vars.compDepth = optimizeRange(0.15, 1.3, 0.05, vars.compDepth, (candidate) => {
+      const calc = computeModel(currentInputs, { smokeWidth: vars.smokeWidth, smokeDepth: vars.smokeDepth, compDepth: candidate, compHeight: vars.compHeight });
+      return calc.shaft.R10 >= 9 && calc.shaft.R10 <= 11;
+    });
+    vars.smokeWidth = optimizeRange(0.3, 1.3, 0.05, vars.smokeWidth, (candidate) => {
+      const calc = computeModel(currentInputs, { smokeWidth: candidate, smokeDepth: vars.smokeDepth, compDepth: vars.compDepth, compHeight: vars.compHeight });
+      return calc.valves.F33 <= 200;
+    });
+    vars.compHeight = optimizeRange(0.3, 1.0, 0.05, vars.compHeight, (candidate) => {
+      const calc = computeModel(currentInputs, { smokeWidth: vars.smokeWidth, smokeDepth: vars.smokeDepth, compDepth: vars.compDepth, compHeight: candidate });
+      return calc.valves.K33 <= 200;
+    });
+  }
+  return computeModel(currentInputs, vars);
+}
+
+const calc = optimizeModel(inputs);
+
+return [
+  {
+    json: {
+      meta,
+      calc,
+      statusMessage: 'Результаты расчета обновлены.',
+      statusIsError: false,
+    },
+  },
+];
