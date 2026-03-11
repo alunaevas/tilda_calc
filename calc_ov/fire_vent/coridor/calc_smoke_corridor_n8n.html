@@ -1,0 +1,2172 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Расчет параметров противодымной вентиляции коридоров многоэтажных зданий через n8n</title>
+  <style>
+    #allrecords .smoke-app {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 26px;
+      font-family: "SF Pro Display", "Segoe UI", Arial, sans-serif;
+      color: #12233b;
+      background:
+        radial-gradient(120% 90% at 0% 0%, rgba(165, 219, 255, 0.28) 0%, rgba(165, 219, 255, 0) 55%),
+        radial-gradient(110% 100% at 100% 0%, rgba(190, 200, 255, 0.2) 0%, rgba(190, 200, 255, 0) 58%),
+        rgba(243, 247, 252, 0.54);
+      border: 1px solid rgba(255, 255, 255, 0.58);
+      border-radius: 24px;
+      box-shadow: 0 20px 60px rgba(21, 55, 98, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+      backdrop-filter: blur(20px) saturate(150%);
+      box-sizing: border-box;
+      position: relative;
+      top: 10px;
+      overflow: hidden;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    #allrecords .smoke-app::before {
+      content: "";
+      position: absolute;
+      inset: -120px -40px auto auto;
+      width: 340px;
+      height: 340px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0) 68%);
+      pointer-events: none;
+    }
+
+    #allrecords .app-header h2 {
+      margin: 0 0 8px;
+      font-size: 32px;
+      font-weight: 700;
+      color: #ad1c42;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+      text-wrap: balance;
+    }
+
+    #allrecords .app-header-meta {
+      margin: 0 0 16px;
+      color: #5e7596;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    #allrecords .app-header p,
+    #allrecords .caption {
+      margin: 0 0 16px;
+      color: #4b6488;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    #allrecords .panel {
+      position: relative;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0%, rgba(242, 249, 255, 0.58) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.78);
+      border-radius: 16px;
+      padding: 14px;
+      box-shadow: 0 10px 26px rgba(31, 67, 113, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.64);
+      backdrop-filter: blur(12px);
+      margin-bottom: 14px;
+    }
+
+    #allrecords .section-title {
+      margin: 0 0 12px;
+      color: #1f3f67;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    #allrecords .grid-2,
+    #allrecords .grid-3,
+    #allrecords .grid-4 {
+      display: grid;
+      gap: 12px;
+    }
+
+    #allrecords .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    #allrecords .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    #allrecords .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+    #allrecords .field-block {
+      display: grid;
+      grid-template-rows: minmax(46px, auto) 48px;
+      gap: 6px;
+      align-items: start;
+    }
+
+    #allrecords .field-block.field-block-hero {
+      grid-template-rows: minmax(32px, auto) 54px;
+    }
+
+    #allrecords .field-block-spacer {
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    #allrecords .label {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1f3f67;
+      line-height: 1.35;
+      padding-top: 6px;
+    }
+
+    #allrecords .field-block-hero .label {
+      font-size: 15px;
+      padding-top: 0;
+    }
+
+    #allrecords .field,
+    #allrecords select.field {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid rgba(147, 176, 212, 0.54);
+      border-radius: 11px;
+      padding: 10px 11px;
+      background: rgba(255, 255, 255, 0.7);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+      min-height: 48px;
+      height: 48px;
+    }
+
+    #allrecords .field-block-hero .field {
+      min-height: 54px;
+      height: 54px;
+      font-size: 16px;
+      padding: 12px 14px;
+    }
+
+    #allrecords .field:focus,
+    #allrecords select.field:focus {
+      border-color: rgba(41, 126, 221, 0.9);
+      background: rgba(255, 255, 255, 0.86);
+      box-shadow: 0 0 0 3px rgba(50, 133, 227, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.74);
+    }
+
+    #allrecords .readonly {
+      color: #2f4667;
+      background: rgba(237, 245, 255, 0.72);
+      border-color: rgba(147, 176, 212, 0.45);
+    }
+
+    #allrecords .input-yellow {
+      background: #fff49a;
+      border-color: #d1be50;
+      font-weight: 700;
+      color: #2b2b2b;
+    }
+
+    #allrecords .city-field {
+      position: relative;
+    }
+
+    #allrecords .city-suggest {
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 0;
+      right: 0;
+      z-index: 60;
+      display: none;
+      max-height: 240px;
+      overflow-y: auto;
+      padding: 8px;
+      border-radius: 18px;
+      background: rgba(240, 245, 252, 0.62);
+      border: 1px solid rgba(255, 255, 255, 0.72);
+      box-shadow: 0 18px 36px rgba(23, 59, 97, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(24px) saturate(160%);
+      -webkit-backdrop-filter: blur(24px) saturate(160%);
+    }
+
+    #allrecords .city-suggest.is-open {
+      display: grid;
+      gap: 4px;
+    }
+
+    #allrecords .city-suggest-item {
+      width: 100%;
+      border: 0;
+      border-radius: 12px;
+      padding: 10px 12px;
+      text-align: left;
+      background: rgba(255, 255, 255, 0.28);
+      color: #183b61;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    #allrecords .city-suggest-item:hover,
+    #allrecords .city-suggest-item.is-active {
+      background: rgba(255, 255, 255, 0.76);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.86), 0 8px 16px rgba(34, 74, 118, 0.12);
+      transform: translateY(-1px);
+    }
+
+    #allrecords .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    #allrecords .subsection {
+      border-radius: 14px;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.42);
+      border: 1px solid rgba(255, 255, 255, 0.58);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+    }
+
+    #allrecords .subsection-title {
+      margin: 0 0 10px;
+      color: #24486f;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    #allrecords .input-guide {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 14px;
+      padding: 14px;
+      border-radius: 16px;
+      background: linear-gradient(180deg, rgba(17, 56, 96, 0.9) 0%, rgba(28, 82, 136, 0.82) 100%);
+      color: #f3f8ff;
+      box-shadow: 0 14px 28px rgba(17, 56, 96, 0.22);
+    }
+
+    #allrecords .input-guide-title {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    #allrecords .input-guide-text {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.45;
+      color: rgba(243, 248, 255, 0.86);
+    }
+
+    #allrecords .step-map {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    #allrecords .step-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.16);
+      color: #fff;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+    }
+
+    #allrecords .step-chip-num {
+      width: 22px;
+      height: 22px;
+      display: inline-grid;
+      place-items: center;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.22);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    #allrecords .input-step {
+      position: relative;
+      overflow: visible;
+      padding: 0;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.54);
+      border: 1px solid rgba(255, 255, 255, 0.72);
+      box-shadow: 0 12px 24px rgba(24, 59, 99, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.52);
+    }
+
+    #allrecords .input-step + .input-step {
+      margin-top: 8px;
+    }
+
+    #allrecords .input-step::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 5px;
+      background: var(--step-accent, #5a8fd8);
+    }
+
+    #allrecords .input-step > summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 14px 18px 14px 18px;
+    }
+
+    #allrecords .input-step > summary::-webkit-details-marker {
+      display: none;
+    }
+
+    #allrecords .input-step > summary:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    #allrecords .step-head {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 12px;
+      align-items: center;
+    }
+
+    #allrecords .step-badge {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border-radius: 12px;
+      background: color-mix(in srgb, var(--step-accent, #5a8fd8) 18%, white);
+      color: #173b63;
+      font-weight: 800;
+      font-size: 14px;
+    }
+
+    #allrecords .step-title-wrap {
+      display: grid;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    #allrecords .step-title {
+      margin: 0;
+      color: #183b61;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    #allrecords .step-hint {
+      margin: 0;
+      color: #5b7394;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    #allrecords .step-toggle {
+      color: #56749b;
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    #allrecords .input-step[open] .step-toggle::after {
+      content: "Свернуть";
+    }
+
+    #allrecords .input-step:not([open]) .step-toggle::after {
+      content: "Развернуть";
+    }
+
+    #allrecords .step-body {
+      position: relative;
+      z-index: 2;
+      padding: 0 18px 18px 18px;
+      border-top: 1px solid rgba(129, 159, 194, 0.18);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.42) 0%, rgba(245, 249, 255, 0.74) 100%);
+    }
+
+    #allrecords .step-body .caption {
+      margin: 0 0 12px;
+    }
+
+    #allrecords .step-fields {
+      margin-top: 10px;
+    }
+
+    #allrecords .step-a { --step-accent: #4d8ee1; }
+    #allrecords .step-b { --step-accent: #56a59a; }
+    #allrecords .step-c { --step-accent: #ca8b42; }
+    #allrecords .step-d { --step-accent: #c95c74; }
+    #allrecords .step-e { --step-accent: #6f88d6; }
+    #allrecords .step-f { --step-accent: #8b72cf; }
+
+    #allrecords .metric-card {
+      display: grid;
+      grid-template-rows: minmax(28px, auto) auto;
+      align-items: start;
+      border-radius: 14px;
+      padding: 10px 12px;
+      background: linear-gradient(180deg, rgba(226, 247, 234, 0.95) 0%, rgba(213, 241, 223, 0.9) 100%);
+      border: 1px solid rgba(109, 176, 130, 0.55);
+      min-height: 74px;
+    }
+
+    #allrecords .metric-card.metric-blue {
+      background: linear-gradient(180deg, rgba(229, 240, 255, 0.95) 0%, rgba(217, 234, 255, 0.92) 100%);
+      border-color: rgba(83, 129, 199, 0.45);
+    }
+
+    #allrecords .metric-label {
+      display: block;
+      font-size: 13px;
+      color: #335273;
+      margin-bottom: 0;
+    }
+
+    #allrecords .metric-value {
+      display: block;
+      font-size: 22px;
+      font-weight: 800;
+      color: #0f4a24;
+      align-self: end;
+    }
+
+    #allrecords .metric-blue .metric-value {
+      color: #184f90;
+    }
+
+    #allrecords .table-wrap {
+      overflow-x: auto;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.4);
+    }
+
+    #allrecords table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      min-width: 620px;
+    }
+
+    #allrecords th,
+    #allrecords td {
+      border-bottom: 1px solid rgba(120, 145, 177, 0.24);
+      padding: 8px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    #allrecords th {
+      background: rgba(225, 233, 245, 0.68);
+      color: #16385f;
+      font-weight: 700;
+      position: sticky;
+      top: 0;
+    }
+
+    #allrecords td.num,
+    #allrecords th.num {
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    #allrecords .actions {
+      display: grid;
+      grid-template-columns: 220px 220px 1fr;
+      gap: 10px;
+      align-items: center;
+    }
+
+    #allrecords .btn-soft {
+      border: 1px solid rgba(118, 144, 178, 0.45);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.66);
+      color: #1f3f67;
+      padding: 10px 14px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    #allrecords .btn-soft:hover {
+      background: rgba(255, 255, 255, 0.86);
+    }
+
+    #allrecords .btn-export {
+      border-color: rgba(255, 255, 255, 0.7);
+      background: linear-gradient(180deg, #4fa8ff 0%, #1b79db 100%);
+      color: #fff;
+      box-shadow: 0 10px 20px rgba(24, 97, 180, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    #allrecords .btn-export:hover {
+      transform: translateY(-1px);
+      background: linear-gradient(180deg, #4fa8ff 0%, #1b79db 100%);
+      color: #fff;
+      box-shadow: 0 14px 24px rgba(24, 97, 180, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    }
+
+    #allrecords .status-line {
+      min-height: 20px;
+      font-size: 13px;
+      color: #587096;
+    }
+
+    #allrecords .report-actions {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid rgba(120, 145, 177, 0.22);
+    }
+
+    #allrecords .report-actions-title {
+      margin: 0 0 10px;
+      color: #1e446f;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    #allrecords .status-loading {
+      color: #1b79db;
+      font-weight: 600;
+    }
+
+    #allrecords .status-error {
+      color: #a22145;
+      font-weight: 700;
+    }
+
+    #allrecords .inline-warning {
+      margin-top: 10px;
+      color: #a22145;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    #allrecords .report-root {
+      width: 960px;
+      background: #fff;
+      color: #111;
+      padding: 28px 32px;
+      font-family: Cambria, "Times New Roman", serif;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+
+    #allrecords .report-root h1,
+    #allrecords .report-root h2 {
+      margin: 0 0 10px;
+      color: #111;
+    }
+
+    #allrecords .report-root h1 {
+      font-size: 24px;
+      text-align: center;
+    }
+
+    #allrecords .report-root h2 {
+      font-size: 19px;
+      margin-top: 16px;
+      margin-bottom: 6px;
+    }
+
+    #allrecords .report-root table {
+      min-width: 0;
+      font-size: 14px;
+      margin-top: 0;
+      margin-bottom: 16px;
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    #allrecords .report-method {
+      margin: -2px 0 18px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    #allrecords .report-method-title {
+      margin: 0 0 8px;
+      font-weight: 700;
+    }
+
+    #allrecords .report-method-item {
+      margin: 0 0 14px;
+    }
+
+    #allrecords .report-method-name {
+      margin: 0 0 6px;
+      font-weight: 700;
+    }
+
+    #allrecords .report-method-formula {
+      margin: 0 0 8px;
+      text-align: center;
+      font-weight: 700;
+    }
+
+    #allrecords .report-method-line {
+      margin: 0 0 4px;
+    }
+
+    #allrecords .report-root th,
+    #allrecords .report-root td {
+      border: 1px solid #7b8794;
+      padding: 7px 9px;
+      position: static;
+    }
+
+    #allrecords .report-root th {
+      background: #eeeeee;
+      font-weight: 700;
+    }
+
+    #allrecords .hidden-report-data {
+      display: none;
+    }
+
+    #allrecords .conditional-hidden {
+      display: none;
+    }
+
+    @media (max-width: 960px) {
+      #allrecords .grid-4,
+      #allrecords .grid-3,
+      #allrecords .summary-grid,
+      #allrecords .actions {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      #allrecords .step-head {
+        grid-template-columns: auto 1fr;
+      }
+
+      #allrecords .step-toggle {
+        grid-column: 1 / -1;
+        padding-left: 46px;
+      }
+    }
+
+    @media (max-width: 780px) {
+      #allrecords .smoke-app {
+        padding: 18px;
+        border-radius: 18px;
+      }
+
+      #allrecords .app-header h2 {
+        font-size: 24px;
+      }
+
+      #allrecords .grid-2,
+      #allrecords .grid-3,
+      #allrecords .grid-4,
+      #allrecords .summary-grid,
+      #allrecords .actions {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="allrecords">
+    <div class="smoke-app">
+      <div class="app-header">
+        <h2>Расчет параметров противодымной вентиляции коридоров многоэтажных зданий</h2>
+        <p class="app-header-meta">По методике ВНИИПО</p>
+      </div>
+
+      <div class="panel">
+        <h3 class="section-title">Исходные данные</h3>
+        <div class="input-guide">
+          <h4 class="input-guide-title">Заполняйте модуль по шагам</h4>
+          <p class="input-guide-text">Ввод выполняется в желтые поля, остальные значения пересчитываются автоматически.</p>
+          <p class="input-guide-text">Сначала заполните поля "объект" и "город", затем переходите к геометрии, пожарной нагрузке и параметрам оборудования. Каждая группа свернута отдельно, чтобы на экране оставался только текущий шаг.</p>
+          <div class="step-map">
+            <a class="step-chip" href="#step-a"><span class="step-chip-num">1</span><span>Объект и климат</span></a>
+            <a class="step-chip" href="#step-b"><span class="step-chip-num">2</span><span>Здание</span></a>
+            <a class="step-chip" href="#step-c"><span class="step-chip-num">3</span><span>Коридор</span></a>
+            <a class="step-chip" href="#step-d"><span class="step-chip-num">4</span><span>Пожарная нагрузка</span></a>
+            <a class="step-chip" href="#step-e"><span class="step-chip-num">5</span><span>Шахты</span></a>
+            <a class="step-chip" href="#step-f"><span class="step-chip-num">6</span><span>Клапаны</span></a>
+          </div>
+        </div>
+
+        <details class="input-step step-a" id="step-a">
+          <summary>
+            <div class="step-head">
+              <div class="step-badge">1</div>
+              <div class="step-title-wrap">
+                <h4 class="step-title">Название объекта и климатологические данные</h4>
+                <p class="step-hint">Выберите объект, город и проверьте автоматически подставленные климатические параметры.</p>
+              </div>
+              <div class="step-toggle"></div>
+            </div>
+          </summary>
+          <div class="step-body">
+            <div class="step-fields">
+              <div class="grid-2">
+                <div class="field-block field-block-hero" style="grid-column: 1 / -1;"><label class="label" for="objectName">Название объекта</label><input class="field input-yellow" id="objectName" type="text" placeholder="Введите название объекта" /></div>
+              </div>
+              <div class="grid-3" style="margin-top:12px;">
+                <div class="field-block city-field"><label class="label" for="city">Населенный пункт</label><input class="field input-yellow" id="city" type="text" autocomplete="off" placeholder="Введите наименование населенного пункта" /><div class="city-suggest" id="citySuggest"></div></div>
+                <div class="field-block"><label class="label" for="warmTemp">Температура наружного воздуха в теплый период, °С</label><input class="field readonly" id="warmTemp" type="text" readonly /></div>
+                <div class="field-block"><label class="label" for="coldTemp">Температура наружного воздуха в холодный период, °С</label><input class="field readonly" id="coldTemp" type="text" readonly /></div>
+              </div>
+              <div class="grid-3" style="margin-top:12px;">
+                <div class="field-block"><label class="label" for="indoorTemp">Температура внутреннего воздуха до пожара, °С</label><input class="field input-yellow" id="indoorTemp" type="text" placeholder="Введите температуру внутреннего воздуха" inputmode="decimal" /></div>
+              </div>
+            </div>
+            <p class="caption" id="climateStatus"></p>
+          </div>
+        </details>
+
+        <details class="input-step step-b" id="step-b">
+          <summary>
+            <div class="step-head">
+              <div class="step-badge">2</div>
+              <div class="step-title-wrap">
+                <h4 class="step-title">Геометрические показатели здания</h4>
+                <p class="step-hint">Основные высотные параметры системы: этажность, выброс, забор воздуха и высота коридора.</p>
+              </div>
+              <div class="step-toggle"></div>
+            </div>
+          </summary>
+          <div class="step-body">
+            <div class="grid-3">
+              <div class="field-block"><label class="label" for="floors">Кол-во этажей</label><input class="field input-yellow" id="floors" type="text" placeholder="Введите количество этажей" inputmode="numeric" /></div>
+              <div class="field-block"><label class="label" for="firstFloor">Номер первого расчетного этажа</label><input class="field input-yellow" id="firstFloor" type="text" placeholder="Введите номер первого расчетного этажа" inputmode="numeric" /></div>
+              <div class="field-block"><label class="label" for="floorHeight">Высота этажа, м</label><input class="field input-yellow" id="floorHeight" type="text" value="3" inputmode="decimal" /></div>
+            </div>
+            <div class="grid-3" style="margin-top:12px;">
+              <div class="field-block"><label class="label" for="exhaustHeight">Высота выброса продуктов горения от ур. земли, м</label><input class="field input-yellow" id="exhaustHeight" type="text" placeholder="Введите высоту выброса продуктов горения" inputmode="decimal" /></div>
+              <div class="field-block"><label class="label" for="intakeHeight">Высота воздухозабора ПДУ от ур. земли, м</label><input class="field input-yellow" id="intakeHeight" type="text" placeholder="Введите высоту воздухозабора ПДУ" inputmode="decimal" /></div>
+            </div>
+          </div>
+        </details>
+
+        <details class="input-step step-c" id="step-c">
+          <summary>
+            <div class="step-head">
+              <div class="step-badge">3</div>
+              <div class="step-title-wrap">
+                <h4 class="step-title">Показатели геометрии коридора</h4>
+                <p class="step-hint">Заполните длину, площадь и параметры дверного проема, затем выберите конфигурацию коридора.</p>
+              </div>
+              <div class="step-toggle"></div>
+            </div>
+          </summary>
+          <div class="step-body">
+            <div class="grid-3">
+              <div class="field-block"><label class="label" for="corridorLength">Длина коридора, м</label><input class="field input-yellow" id="corridorLength" type="text" placeholder="Введите длину коридора" inputmode="decimal" /></div>
+              <div class="field-block"><label class="label" for="corridorArea">Площадь коридора, м²</label><input class="field input-yellow" id="corridorArea" type="text" placeholder="Введите площадь коридора" inputmode="decimal" /></div>
+              <div class="field-block"><label class="label" for="corridorHeight">Высота коридора, м</label><input class="field input-yellow" id="corridorHeight" type="text" placeholder="Введите высоту коридора" inputmode="decimal" /></div>
+            </div>
+            <div class="grid-3" style="margin-top:12px;">
+              <div class="field-block"><label class="label" for="doorHeight">Дверной проем в ЛК, высота, м</label><input class="field input-yellow" id="doorHeight" type="text" placeholder="Введите высоту дверного проема" inputmode="decimal" /></div>
+              <div class="field-block"><label class="label" for="doorWidth">Дверной проем в ЛК, длина, м</label><input class="field input-yellow" id="doorWidth" type="text" placeholder="Введите длину дверного проема" inputmode="decimal" /></div>
+              <div class="field-block"><label class="label" for="corridorConfig">Конфигурация коридора</label><select class="field input-yellow" id="corridorConfig"><option>угловая</option><option selected>прямолинейная</option><option>кольцевая</option></select></div>
+            </div>
+            <div class="inline-warning" id="geometryWarning"></div>
+          </div>
+        </details>
+
+        <details class="input-step step-d" id="step-d">
+          <summary>
+            <div class="step-head">
+              <div class="step-badge">4</div>
+              <div class="step-title-wrap">
+                <h4 class="step-title">Показатели пожарной нагрузки</h4>
+                <p class="step-hint">Здесь задаются расчетные условия пожара, тип регулирования и назначение здания.</p>
+              </div>
+              <div class="step-toggle"></div>
+            </div>
+          </summary>
+          <div class="step-body">
+            <div class="grid-2">
+              <div class="field-block"><label class="label" for="fireLoad">Удельная приведенная пожарная нагрузка q0, кг/м²</label><input class="field input-yellow" id="fireLoad" type="text" value="41" inputmode="decimal" /></div>
+              <div class="field-block"><label class="label" for="thermalLoad">Нагрузка к тепловоспринимающим конструкциям gк, кг/м²</label><input class="field input-yellow" id="thermalLoad" type="text" value="7" inputmode="decimal" /></div>
+            </div>
+            <div class="grid-2" style="margin-top:12px;">
+              <div class="field-block"><label class="label" for="fireRegulation">Тип регулирования пожара</label><select class="field input-yellow" id="fireRegulation"><option selected>ПРВ</option><option>ПРН</option></select></div>
+              <div class="field-block"><label class="label" for="buildingType">Назначение здания</label><select class="field input-yellow" id="buildingType"><option>жилое</option><option selected>административное</option></select></div>
+            </div>
+          </div>
+        </details>
+
+        <details class="input-step step-e" id="step-e">
+          <summary>
+            <div class="step-head">
+              <div class="step-badge">5</div>
+              <div class="step-title-wrap">
+                <h4 class="step-title">Параметры шахт</h4>
+                <p class="step-hint">Материал и размеры шахт, а также потери в обвязке вентиляторов.</p>
+              </div>
+              <div class="step-toggle"></div>
+            </div>
+          </summary>
+          <div class="step-body">
+            <div class="grid-3">
+              <div class="field-block"><label class="label" for="smokeMaterial">Материал шахты дымоудаления</label><select class="field input-yellow" id="smokeMaterial"><option>Кирпич</option><option>Бетон</option><option selected>Металл</option></select></div>
+              <div class="field-block"><label class="label" for="compMaterial">Материал шахты компенсации</label><select class="field input-yellow" id="compMaterial"><option>Кирпич</option><option>Бетон</option><option selected>Металл</option></select></div>
+              <div class="field-block"><label class="label" for="compWidth">Ширина шахты компенсации, м</label><input class="field input-yellow" id="compWidth" type="text" placeholder="Введите ширину шахты компенсации" inputmode="decimal" /></div>
+            </div>
+            <div class="grid-3" style="margin-top:12px;">
+              <div class="field-block"><label class="label" for="smokeHarnessLoss">Потери давления в обвязке вентилятора ДУ, Па</label><input class="field input-yellow" id="smokeHarnessLoss" type="text" placeholder="Введите потери в обвязке ДУ" inputmode="decimal" /></div>
+              <div class="field-block"><label class="label" for="compHarnessLoss">Потери давления в обвязке вентилятора компенсации, Па</label><input class="field input-yellow" id="compHarnessLoss" type="text" placeholder="Введите потери в обвязке компенсации" inputmode="decimal" /></div>
+              <div class="field-block field-block-spacer" aria-hidden="true"><label class="label">Пусто</label><input class="field" type="text" tabindex="-1" /></div>
+            </div>
+          </div>
+        </details>
+
+        <details class="input-step step-f" id="step-f">
+          <summary>
+            <div class="step-head">
+              <div class="step-badge">6</div>
+              <div class="step-title-wrap">
+                <h4 class="step-title">Параметры клапана дымоудаления и компенсации дымоудаления</h4>
+                <p class="step-hint">Настройте количество клапанов на системе ДУ на этаже пожара и если клапана 2, то размеры для второго клапана.</p>
+              </div>
+              <div class="step-toggle"></div>
+            </div>
+          </summary>
+          <div class="step-body">
+            <div class="grid-4">
+              <div class="field-block"><label class="label" for="smokeValveCount">Клапанов ДУ данной системы на этаже пожара</label><select class="field input-yellow" id="smokeValveCount"><option selected>1</option><option>2</option></select></div>
+              <div class="field-block conditional-hidden" id="smokeValve2WidthBlock"><label class="label" for="smokeValve2Width">Ширина клапана ДУ №2, м</label><input class="field input-yellow" id="smokeValve2Width" type="text" placeholder="Введите ширину клапана ДУ №2" inputmode="decimal" /></div>
+              <div class="field-block conditional-hidden" id="smokeValve2HeightBlock"><label class="label" for="smokeValve2Height">Высота клапана ДУ №2, м</label><input class="field input-yellow" id="smokeValve2Height" type="text" placeholder="Введите высоту клапана ДУ №2" inputmode="decimal" /></div>
+            </div>
+            <div class="grid-4" style="margin-top:12px;">
+              <div class="field-block"><label class="label" for="compValveCount">Клапанов компенсации на этаже пожара</label><select class="field input-yellow" id="compValveCount"><option selected>1</option><option>2</option></select></div>
+              <div class="field-block conditional-hidden" id="compValve2WidthBlock"><label class="label" for="compValve2Width">Ширина клапана компенсации №2, м</label><input class="field input-yellow" id="compValve2Width" type="text" placeholder="Введите ширину клапана компенсации №2" inputmode="decimal" /></div>
+              <div class="field-block conditional-hidden" id="compValve2HeightBlock"><label class="label" for="compValve2Height">Высота клапана компенсации №2, м</label><input class="field input-yellow" id="compValve2Height" type="text" placeholder="Введите высоту клапана компенсации №2" inputmode="decimal" /></div>
+            </div>
+            <div class="grid-4" style="margin-top:12px;">
+              <div class="field-block"><label class="label" for="fireDistance">Расстояние от дымоприемника до двери ближайшей квартиры, м</label><input class="field input-yellow" id="fireDistance" type="text" placeholder="Введите расстояние до ближайшей двери" inputmode="decimal" /></div>
+            </div>
+          </div>
+        </details>
+      </div>
+
+      <div class="panel">
+        <h3 class="section-title">Результат расчета</h3>
+        <div class="summary-grid" id="summaryGrid"></div>
+        <div class="status-line" id="calcStatus"></div>
+        <div class="report-actions">
+          <div class="report-actions-title">Выгрузка отчета</div>
+          <div class="actions">
+            <select class="field input-yellow" id="reportFormat">
+              <option value="docx">DOCX</option>
+              <option value="pdf">PDF</option>
+            </select>
+            <button class="btn-soft btn-export" id="exportReportBtn" type="button">Выгрузить отчет</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var CITY_DATA = [["Абакан",-37,4.8,28],["Агата",-53,2.9,21],["Агзу",-28,2.3,27],["Агинское",-34,3.7,27],["Ай-Петри",-16,0,23],["Акша",-34,4.5,27],["Алдан",-41,2.3,25],["Алейск",-35,5.9,29],["Александров Гай",-26,4.8,33],["Александровск- Сахалинский",-26,6.8,21],["Александровский Завод",-37,2.4,25],["Александровское",-42,3.5,25],["Алыгджер",-34,4.7,24],["Амга",-54,2.1,27],["Анадырь",-39,6.3,18],["Анучино",-29,2.4,29],["Апука",-28,7.8,14],["Арзамас",-29,4.7,26],["Арзгир",-20,4.3,33],["Архангельск",-34,3.6,24],["Архара",-36,2.5,27],["Аскания-Нова",-16,0,31],["Астраханка",-25,3.4,27],["Астрахань",-20,3.8,33],["Ачинск",-36,4.7,26],["Аян",-28,3,18],["Бабаево",-30,3.1,25],["Бабушкин",-29,5.7,20],["Багдарин",-42,2.2,24],["Байдуков",-30,7.6,20],["Байкальск",-27,1.4,23],["Байкит",-50,2.1,25],["Балашов",-25,4.6,29],["Барабинск",-38,4.2,27],["Баргузин",-41,3.2,26],["Барнаул",-36,3.9,28],["Батамай",-53,2.9,24],["Бежецк",-30,4.4,24],["Белгород",-24,4.7,28],["Белогорск",-36,2.7,28],["Белорецк",-31,5.1,26],["Бердигястях",-54,1.7,26],["Березово",-42,3.8,20],["Березово",-50,7.1,23],["Бийск",-37,4.9,28],["Бикин",-30,2.1,28],["Биробиджан",-31,2.6,28],["Бисер",-35,3.8,24],["Благовещенск",-33,2.6,28],["Богополь",-20,6.1,27],["Боготол",-37,3.7,25],["Богучаны",-45,3.1,27],["Бодайбо",-47,2.3,27],["Болотное",-38,3.8,27],["Большерецк",-27,5.5,16],["Бомнак",-42,2.2,26],["Борзя",-38,2.4,27],["Боровичи",-29,2.6,25],["Братолюбовка",-37,2,27],["Братск",-39,2.5,24],["Брохово",-35,6.9,17],["Брянск",-23,3.5,26],["Бугульма",-29,6.5,26],["Буяга",-52,2.6,27],["Бысса",-40,2.1,27],["Вайда-Губа",-16,9.2,17],["Ванавара",-51,2.1,27],["Варандей",-36,9.3,16],["Великие Луки",-25,4.1,26],["Великий Новгород",-27,5,25],["Вельмо",-48,4,26],["Вендинга",-39,3,25],["Верхнеимбатск",-47,3.1,25],["Верхне-Марково",-48,3.7,27],["Верхнеуральск",-35,3.6,27],["Верхний Баскунчак",-23,3.9,34],["Верхняя Гутара",-35,2.1,24],["Верхотурье",-36,3,26],["Верхоянск",-58,1.4,27],["Вилюйск",-52,1.8,27],["Витим",-50,3.7,26],["Владивосток",-22,7.1,23],["Владикавказ",-14,1.9,28],["Владимир",-27,4.1,25],["Волгоград",-22,5.5,32],["Вологда",-32,3.9,25],["Волочанка",-50,6.7,20],["Воркута",-41,8.2,21],["Воронеж",-24,4,29],["Выборг",-26,6,24],["Выкса",-28,4.5,27],["Вытегра",-32,3.5,25],["Вяземский",-29,2.9,28],["Вязьма",-25,4.5,24],["Гвасюги",-33,2.2,28],["Геническ",-15,5.8,29],["Гигант",-19,5.2,32],["Глазов",-34,5.1,26],["Грозный",-17,3.4,32],["Дальнереченск",-28,2.9,27],["Дарасун",-34,3.1,27],["Дебальцево",-22,4.5,29],["Демьянское",-40,2.8,26],["Дербент",-7,3.2,30],["Джалинда",-56,2.5,23],["Джаорэ",-30,5.9,20],["Джарджан",-54,5,23],["Джикимда",-51,1.7,28],["Диксон",-40,9,11],["Дмитров",-26,4.7,25],["Долинск",-23,3.4,24],["Донецк",-19,5.4,30],["Дуван",-33,3.6,26],["Дудинка",-47,6.7,21],["Екатеринбург",-32,4,26],["Екатерино- Никольское",-29,4.5,28],["Елабуга",-31,4.1,27],["Емецк",-32,4.8,25],["Енисейск",-44,3.1,26],["Ербогачен",-52,2.1,26],["Ерофей Павлович",-37,2.3,26],["Ершово",-41,2.8,26],["Жигалово",-44,2.4,27],["Жиганск",-52,4.1,24],["Завитинск",-34,2.1,27],["Запорожье",-18,0,31],["Земетчино",-28,4.5,29],["Зея",-42,3.5,27],["Зима",-38,2.6,27],["Змеиногорск",-37,5.2,28],["Зырянка",-50,3,25],["Иваново",-29,4.3,25],["Ивдель",-39,2.8,26],["Игарка",-49,5.2,23],["Ижевск",-31,5.1,28],["Ика",-50,2.7,26],["Им. Полины Осипенко",-40,3.2,27],["Индига",-35,10,18],["Иркутск",-33,2.9,26],["Исиль-Куль",-36,3.9,28],["Исить",-50,4.5,25],["Ича",-26,4.4,15],["Иэма",-57,1.8,22],["Йошкар-Ола",-31,4.6,26],["Казань",-29,3.9,27],["Калакан",-47,2.5,26],["Калевала",-33,3,22],["Калининград",-18,3.5,25],["Калуга",-25,3.9,26],["Каменск-Уральский",-35,2.3,27],["Камышин",-24,5.5,32],["Кандалакша",-30,3.6,21],["Канин Нос",-24,10.3,15],["Канск",-40,4.5,27],["Карасук",-37,5.5,29],["Каргополь",-29,3.6,24],["Катанда",-38,1.8,26],["Кашира",-26,3.9,25],["Кемерово",-39,3.4,27],["Кемь",-28,4.6,21],["Керчь",-12,6.3,33],["Кильмезь",-31,5.1,27],["Кинешма",-29,3.4,26],["Киренск",-49,3.6,27],["Кирилловка",-18,5.4,30],["Киров",-32,3.4,25],["Кировский",-30,2.4,28],["Киселевск",-35,4.5,27],["Кисловодск",-14,3.4,26],["Клепинино",-14,0,30],["Ключи",-33,3.9,22],["Ковдор",-32,2.5,21],["Козыревск",-35,5.9,24],["Койнас",-41,2.2,25],["Колпашево",-42,3.1,26],["Комсомольск-на- Амуре",-36,4,27],["Кондинское",-39,4.1,26],["Кондома",-36,2.9,27],["Корсаков",-19,4.1,21],["Корф",-29,6,16],["Кострома",-29,4.4,26],["Котельниково",-23,4.1,32],["Коткино",-41,4.3,22],["Котлас",-35,4.2,25],["Кочки",-38,5.1,28],["Кош-Агач",-42,3.3,22],["Красная Поляна",-7,1.5,28],["Краснодар",-15,3.2,32],["Краснощелье",-34,3.4,21],["Красноярск",-37,4.1,26],["Красный Чикой",-37,2.4,26],["Красный Яр",-32,2.4,28],["Крест-Хальджай",-54,1.3,27],["Кроноки",-20,3.8,16],["Кувандык",-31,4.7,32],["Купино",-38,5.8,28],["Курган",-36,5.4,28],["Курильск",-15,9.2,21],["Курск",-23,4,27],["Кызыл",-47,1.7,29],["Кыштовка",-39,3.9,27],["Кюсюр",-52,4.4,21],["Кяхта",-31,2.3,27],["Ленск",-50,4.2,26],["Леуши",-37,2.7,26],["Липецк",-25,5.2,28],["Ловозеро",-34,5.2,21],["Лопатка, мыс",-13,11.5,11],["Луганск",-23,3.5,30],["Магадан",-28,4.7,16],["Магас",-14,1.5,29],["Майкоп",-16,3.6,31],["Макаров",-23,3.1,22],["Мама",-44,2.7,27],["Маргаритово",-21,2.9,27],["Мариинск",-39,5,27],["Мариуполь",-16,0,30],["Марково",-47,3.4,22],["Марресаля",-40,7.7,15],["Махачкала",-13,5.2,29],["Мезень",-36,4.5,23],["Мелеуз",-33,4.6,30],["Мельничное",-31,4.1,28],["Миллерово",-22,6.5,30],["Мильково",-36,3.2,23],["Минеральные Воды",-18,4.5,30],["Минусинск",-40,4,28],["Мирный",-48,3.8,25],["Могоча",-40,3.5,25],["Можайск",-26,3.9,26],["Монды",-32,3,23],["Мончегорск",-32,6.5,22],["Москва",-26,2,26],["Мурманск",-28,5.4,21],["Муром",-28,3.6,27],["Нагорный",-40,4.2,23],["Нагорское",-33,3.7,24],["Надым",-45,4.5,24],["Наканно",-54,2.6,26],["Нальчик",-17,2.1,29],["Наро-Фоминск",-26,3.6,27],["Нарьян-Мар",-39,4.9,22],["Начики",-32,3.6,20],["Невельск",-16,7.1,21],["Невинномысск",-17,4.3,32],["Непа",-49,2.5,26],["Нера",-58,2.1,25],["Нерчинск",-42,4,28],["Нерчинский Завод",-38,2.4,26],["Ниванкюль",-34,3.1,22],["Нижнеангарск",-33,2.2,23],["Нижнетамбовское",-36,3.8,27],["Нижний Новгород",-27,4.4,27],["Николаевск-на-Амуре",-33,3.9,23],["Никольск",-34,2.8,26],["Новая Ладога",-27,3.7,24],["Новоаннинский",-25,4.3,32],["Новомосковский АО",-26,3.2,27],["Новосибирск",-37,4.2,27],["Ноглики",-30,4.1,23],["Ножовка",-34,3.5,27],["Норск",-41,2.1,27],["Нюрба",-53,2.6,26],["Нязепетровск",-34,3.4,26],["о.Беринга",-11,9.1,13],["о.Сосновец",-24,9.2,14],["Облучье",-36,1.9,27],["Объячево",-34,3.7,24],["Оймякон",-59,1.5,24],["Октябрьское",-41,2.2,24],["Олекминск",-49,3,26],["Оленек",-55,2.6,24],["Олонец",-29,4.6,24],["Омолон",-47,3.1,23],["Омск",-36,2.7,27],["Омсукчан",-48,4.6,22],["Онгудай",-36,2.1,27],["Онега",-31,4,24],["Орел",-25,4.5,28],["Оренбург",-29,5.6,32],["Орлинга",-45,2.6,26],["Оссора",-31,6.1,17],["Островное",-50,3.1,23],["Оха",-29,6.3,23],["Охотск",-32,4,17],["Охотский Перевоз",-54,1.6,26],["Паданы",-30,3.9,22],["Палатка",-35,3.9,22],["Партизанск",-21,5.4,26],["Пенза",-27,4.5,29],["Перевоз",-45,3.1,27],["Пермь",-35,3.4,26],["Петрозаводск",-28,3.9,23],["Петропавловск- Камчатский",-18,5,18],["Петрунь",-44,5.1,23],["Печора",-43,4.5,25],["Погиби",-30,6.2,19],["Порецкое",-29,5.6,28],["Поронайск",-26,3.8,20],["Посьет",-18,6.6,25],["Поярково",-35,2.5,28],["Преображение",-16,3.8,23],["Преображенка",-50,2.5,26],["Приморско-Ахтарск",-15,4.4,32],["Псков",-25,3.5,26],["Пялица",-26,8.2,18],["Реболы",-34,3.1,23],["Родино",-37,5.9,29],["Ростов-на-Дону",-18,5.5,31],["Рубцовск",-37,7.1,29],["Рудная Пристань",-19,4.6,23],["Рязань",-25,3.6,28],["Салехард",-43,3,21],["Самара",-27,3.5,29],["Сангар",-50,4.4,25],["Санкт-Петербург",-24,3.2,25],["Саранск",-28,6.7,27],["Сарапул",-31,3.7,27],["Саратов",-24,4.3,30],["Саскылах",-53,3.4,20],["Свободный",-37,2.9,28],["Севастополь",-7,0,31],["Семлячики",-15,7.9,17],["Симферополь",-13,6.2,30],["Сковородино",-39,2.3,26],["Славгород",-37,4.9,30],["Смоленск",-23,4.1,25],["Соболево",-30,3.3,17],["Советская Гавань",-25,4.2,23],["Сорочинск",-30,4.5,31],["Сортавала",-28,3.7,23],["Сосново-Озерское",-36,5,24],["Сосуново",-21,5.8,21],["Сосьва",-44,2,25],["Софийский Прииск",-42,1.7,23],["Сочи",-3,4.6,29],["Среднекан",-50,1.5,26],["Среднеколымск",-50,2,23],["Средний Васюган",-39,3.2,26],["Средний Калар",-46,3.3,25],["Ставрополь",-18,7.1,30],["Старица",-27,3.8,24],["Сунтар",-52,2.3,27],["Сургут",-42,4.5,26],["Сурское",-31,3.3,28],["Сусуман",-54,3.2,23],["Сухана",-58,2.7,24],["Сыктывкар",-35,3.3,25],["Таганрог",-17,4.6,30],["Тайга",-39,5,25],["Тайшет",-39,3.4,26],["Тамбов",-25,4.3,29],["Тара",-38,2.9,27],["Тарко-Сале",-47,3.6,24],["Татарск",-37,3.7,28],["Тверь",-27,3.8,25],["Терекли-Мектеб",-17,3.7,35],["Териберка",-21,10.9,19],["Тисуль",-39,6.5,26],["Тихвин",-29,3.2,25],["Тихорецк",-17,4.5,28],["Тобольск",-39,4.1,26],["Тогул",-35,4.4,27],["Токо",-51,2.5,25],["Томмот",-50,2,27],["Томпо",-54,2.6,25],["Томск",-39,2.4,26],["Топки",-37,4.6,26],["Тотьма",-33,3.1,25],["Троицкий АО",-26,3.9,26],["Троицкое",-32,3.9,27],["Троицко-Печорское",-39,3.1,25],["Тула",-24,3.6,26],["Тулун",-37,2.5,26],["Тунгокочен",-43,2.8,25],["Туой-Хая",-52,3,25],["Тупик",-43,2.1,26],["Тура",-53,2,25],["Туринск",-36,4.3,27],["Туруханск",-48,5.1,24],["Тында",-40,3,26],["Тюмень",-35,2.9,26],["Тяня",-50,2.3,28],["Уакит",-40,4.4,22],["Угут",-42,2.9,26],["Улан-Удэ",-35,2.1,28],["Ульяновск",-33,5.6,28],["Умба",-29,4.7,20],["Уренгой",-48,4.1,23],["Усть-Воямполка",-34,4,15],["Усть-Кабырза",-39,2.3,27],["Усть-Камчатск",-28,5.2,15],["Усть-Мая",-52,1.6,26],["Усть-Миль",-51,1.5,27],["Усть-Мома",-56,2.5,25],["Усть-Нюкжа",-43,1.8,26],["Усть-Озерное",-43,2.7,26],["Усть-Олой",-51,1.7,23],["Усть-Ордынский",-38,2.7,27],["Усть-Уса",-41,4.5,23],["Усть-Хайрюзово",-30,5.4,17],["Усть-Цильма",-40,4.7,23],["Усть-Щугор",-45,4.1,24],["Уфа",-33,3.9,28],["Ухта",-38,4,25],["Феодосия",-12,3.7,31],["Хабаровск",-29,3.8,27],["Ханты-Мансийск",-41,2.7,25],["Хатанга",-50,5.4,20],["Херсон",-16,4.2,30],["Ходовариха",-32,8.6,15],["Холмск",-17,5.9,21],["Хоринск",-38,4.8,28],["Хоседа-Хард",-42,6.7,22],["Чара",-45,1.6,25],["Чебоксары",-29,6.1,27],["Челюскин, мыс",-41,8.3,5],["Челябинск",-32,3.7,27],["Чердынь",-37,4,25],["Черкесск",-16,3.8,29],["Черлак",-36,3.3,29],["Черняево",-40,3.7,28],["Черусти",-27,3.1,27],["Чечуйск",-49,4.7,27],["Чита",-37,1.5,27],["Чугуевка",-30,2.2,29],["Чулым",-38,4.9,27],["Чульман",-43,3.4,24],["Чумикан",-32,6.5,23],["Чурапча",-54,1.9,27],["Чухлома",-32,3.6,25],["Шамары",-36,3.1,26],["Шарья",-32,3.4,26],["Шелагонцы",-57,1.7,25],["Шенкурск",-35,3.9,25],["Шимановск",-37,3.1,28],["Шира",-36,4.3,26],["Эйк",-52,2.7,23],["Экимчан",-42,1.6,26],["Элиста",-21,8.2,33],["Эльтон",-24,5.8,33],["Эньмувеем",-48,4.7,21],["Южно-Курильск",-12,6.7,19],["Южно-Сахалинск",-21,3.3,23],["Яйлю",-24,3.7,25],["Якутск",-52,1.7,27],["Ялта",-4,2.8,31],["Янаул",-34,6,28],["Ярославль",-29,4.7,26],["Ярцево",-46,4.1,26]];
+      var WIND_SPEEDS = [2, 2.5, 3, 4, 5, 6, 7, 8, 10];
+      var WIND_ROWS = [
+        { height: 10, factors: [1, 1, 1, 1, 1, 1, 1, 1, 1] },
+        { height: 50, factors: [2.3, 1.8, 1.8, 1.5, 1.4, 1.4, 1.3, 1.2, 1.2] },
+        { height: 100, factors: [2.8, 2.4, 2.2, 1.9, 1.8, 1.7, 1.5, 1.4, 1.2] },
+        { height: 150, factors: [3.2, 2.8, 2.5, 2.1, 2, 1.8, 1.7, 1.6, 1.4] },
+        { height: 200, factors: [3.5, 3, 2.7, 2.4, 2.1, 2, 1.8, 1.7, 1.4] },
+        { height: 250, factors: [3.8, 3.2, 2.8, 2.5, 2.3, 2.1, 1.9, 1.8, 1.5] },
+        { height: 300, factors: [3.8, 3.4, 3, 2.6, 2.4, 2.2, 2, 1.9, 1.6] },
+        { height: 350, factors: [4, 3.4, 3, 2.6, 2.4, 2.3, 2.1, 2, 1.7] },
+        { height: 400, factors: [4, 3.4, 3.2, 2.8, 2.5, 2.3, 2.1, 2.1, 1.8] },
+        { height: 450, factors: [4, 3.6, 3.2, 2.9, 2.6, 2.4, 2.2, 2.2, 1.8] },
+        { height: 500, factors: [4, 3.6, 3.2, 2.9, 2.6, 2.5, 2.3, 2.2, 1.9] }
+      ];
+      var WEBHOOK_URL = "https://frostily-tough-naiad.cloudpub.ru/webhook/dda11149-8037-46f6-8586-c3e190e26b18";
+      var MODULE_META = {
+        module: "calc_smoke_corridor",
+        moduleGroup: "calc_ov",
+        moduleVersion: "n8n-shell",
+        sourceFile: "calc_smoke_corridor_n8n.html"
+      };
+      var WEBHOOK_URL = "https://frostily-tough-naiad.cloudpub.ru/webhook/dda11149-8037-46f6-8586-c3e190e26b18";
+      var MODULE_META = {
+        module: "calc_smoke_corridor",
+        moduleGroup: "calc_ov",
+        moduleVersion: "n8n-shell",
+        sourceFile: "calc_smoke_corridor_n8n.html"
+      };
+      var DEFAULT_CITY = { city: "Екатеринбург", cold: -32, warm: 26, wind: 4 };
+      var state = {
+        cityData: [],
+        climateMap: {},
+        calc: null,
+        citySuggestItems: [],
+        citySuggestActive: -1,
+        calcRequestSeq: 0,
+        debounceTimer: null,
+        currentController: null
+      };
+
+      var els = {
+        city: document.getElementById("city"),
+        citySuggest: document.getElementById("citySuggest"),
+        warmTemp: document.getElementById("warmTemp"),
+        coldTemp: document.getElementById("coldTemp"),
+        objectName: document.getElementById("objectName"),
+        floors: document.getElementById("floors"),
+        firstFloor: document.getElementById("firstFloor"),
+        floorHeight: document.getElementById("floorHeight"),
+        indoorTemp: document.getElementById("indoorTemp"),
+        exhaustHeight: document.getElementById("exhaustHeight"),
+        intakeHeight: document.getElementById("intakeHeight"),
+        corridorHeight: document.getElementById("corridorHeight"),
+        doorHeight: document.getElementById("doorHeight"),
+        doorWidth: document.getElementById("doorWidth"),
+        corridorArea: document.getElementById("corridorArea"),
+        corridorLength: document.getElementById("corridorLength"),
+        geometryWarning: document.getElementById("geometryWarning"),
+        fireLoad: document.getElementById("fireLoad"),
+        thermalLoad: document.getElementById("thermalLoad"),
+        fireDistance: document.getElementById("fireDistance"),
+        corridorConfig: document.getElementById("corridorConfig"),
+        buildingType: document.getElementById("buildingType"),
+        fireRegulation: document.getElementById("fireRegulation"),
+        smokeMaterial: document.getElementById("smokeMaterial"),
+        compMaterial: document.getElementById("compMaterial"),
+        compWidth: document.getElementById("compWidth"),
+        smokeHarnessLoss: document.getElementById("smokeHarnessLoss"),
+        compHarnessLoss: document.getElementById("compHarnessLoss"),
+        smokeValveCount: document.getElementById("smokeValveCount"),
+        compValveCount: document.getElementById("compValveCount"),
+        smokeValve2WidthBlock: document.getElementById("smokeValve2WidthBlock"),
+        smokeValve2HeightBlock: document.getElementById("smokeValve2HeightBlock"),
+        smokeValve2Width: document.getElementById("smokeValve2Width"),
+        smokeValve2Height: document.getElementById("smokeValve2Height"),
+        compValve2WidthBlock: document.getElementById("compValve2WidthBlock"),
+        compValve2HeightBlock: document.getElementById("compValve2HeightBlock"),
+        compValve2Width: document.getElementById("compValve2Width"),
+        compValve2Height: document.getElementById("compValve2Height"),
+        summaryGrid: document.getElementById("summaryGrid"),
+        reportFormat: document.getElementById("reportFormat"),
+        exportReportBtn: document.getElementById("exportReportBtn"),
+        calcStatus: document.getElementById("calcStatus"),
+        climateStatus: document.getElementById("climateStatus")
+      };
+
+      function toNum(value, fallback) {
+        var normalized = String(value == null ? "" : value).replace(",", ".").trim();
+        var num = Number(normalized);
+        return Number.isFinite(num) ? num : fallback;
+      }
+
+      function fmt(value, digits) {
+        if (!Number.isFinite(value)) return "—";
+        return value.toFixed(digits).replace(".", ",");
+      }
+
+      function fmtTrimmed(value, digits) {
+        if (!Number.isFinite(value)) return "—";
+        var text = value.toFixed(digits).replace(".", ",");
+        return text.replace(/,?0+$/, "").replace(/,$/, "");
+      }
+
+      function reportFormula(items) {
+        return { title: "Краткая методика расчета", items: items };
+      }
+
+      function round(value, digits) {
+        var factor = Math.pow(10, digits || 0);
+        return Math.round(value * factor) / factor;
+      }
+
+      function fileSafeName(name) {
+        return String(name || "otchet")
+          .trim()
+          .replace(/[\\/:*?"<>|]+/g, "_")
+          .replace(/\s+/g, "_")
+          .slice(0, 80) || "otchet";
+      }
+
+      function loadScript(url) {
+        return new Promise(function (resolve, reject) {
+          var script = document.createElement("script");
+          script.src = url;
+          script.onload = resolve;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
+
+      function loadFirstAvailable(urls) {
+        return new Promise(function (resolve, reject) {
+          var idx = 0;
+          function next() {
+            if (idx >= urls.length) {
+              reject(new Error("script_load_failed"));
+              return;
+            }
+            loadScript(urls[idx++]).then(resolve).catch(next);
+          }
+          next();
+        });
+      }
+
+      function ensurePdfLibs() {
+        function resolvePdfMake() {
+          var candidate = window.pdfMake || window.pdfmake || window.pdfMakeDefault || null;
+          if (candidate && candidate.default && candidate.default.createPdf) candidate = candidate.default;
+          if (candidate && candidate.createPdf) {
+            window.pdfMake = candidate;
+            return candidate;
+          }
+          return null;
+        }
+        var existing = resolvePdfMake();
+        if (existing && existing.vfs) return Promise.resolve(existing);
+        var corePromise = existing
+          ? Promise.resolve(existing)
+          : loadScript("https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js").then(function () {
+              var core = resolvePdfMake();
+              if (!core) throw new Error("pdfmake_core_not_loaded");
+              return core;
+            });
+        return corePromise.then(function (core) {
+          if (core.vfs) return core;
+          return loadScript("https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.min.js").then(function () {
+            var normalized = resolvePdfMake();
+            if (!normalized) throw new Error("pdfmake_not_available");
+            return normalized;
+          });
+        });
+      }
+
+      function ensureDocxLibs() {
+        if (window.docx && window.docx.Packer) return Promise.resolve();
+        return loadFirstAvailable([
+          "https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js",
+          "https://unpkg.com/docx@8.5.0/build/index.umd.js"
+        ]);
+      }
+
+      function downloadBlob(blob, filename) {
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+      }
+
+      function normalizeCityName(name) {
+        return String(name || "")
+          .toLowerCase()
+          .replace(/\s+/g, " ")
+          .replace(/\n/g, " ")
+          .replace(/\u00a0/g, " ")
+          .replace(/\s*-\s*/g, "-")
+          .trim();
+      }
+
+      function escapeHtml(text) {
+        return String(text == null ? "" : text)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function setStatus(text, stateName) {
+        els.calcStatus.className = "status-line" + (stateName ? " status-" + stateName : "");
+        els.calcStatus.textContent = text || "";
+      }
+
+      function normalizeNumericDisplay(value) {
+        return String(value == null ? "" : value).replace(/\./g, ",");
+      }
+
+      function bindNumericFormatting() {
+        Array.prototype.forEach.call(document.querySelectorAll('input[inputmode="decimal"]'), function (input) {
+          input.addEventListener("input", function () {
+            var startPos = input.selectionStart;
+            var endPos = input.selectionEnd;
+            var normalized = normalizeNumericDisplay(input.value);
+            if (input.value !== normalized) {
+              input.value = normalized;
+              if (typeof startPos === "number" && typeof endPos === "number") input.setSelectionRange(startPos, endPos);
+            }
+          });
+          if (input.value) input.value = normalizeNumericDisplay(input.value);
+        });
+        ["floors", "firstFloor"].forEach(function (id) {
+          var input = document.getElementById(id);
+          if (!input) return;
+          input.addEventListener("input", function () {
+            var cleaned = input.value.replace(/[^\d]/g, "");
+            if (input.value !== cleaned) input.value = cleaned;
+          });
+        });
+      }
+
+      function applyDefaultValues() {
+        if (!els.fireLoad.value) els.fireLoad.value = "41";
+        if (!els.thermalLoad.value) els.thermalLoad.value = "7";
+        els.fireLoad.value = normalizeNumericDisplay(els.fireLoad.value);
+        els.thermalLoad.value = normalizeNumericDisplay(els.thermalLoad.value);
+      }
+
+      function getSelectedClimate() {
+        return state.climateMap[normalizeCityName(els.city.value)] || null;
+      }
+
+      function syncClimateFields() {
+        var climate = getSelectedClimate();
+        if (!climate) {
+          els.warmTemp.value = "";
+          els.coldTemp.value = "";
+          els.climateStatus.textContent = "";
+          return null;
+        }
+        els.warmTemp.value = fmt(climate.warm, 1);
+        els.coldTemp.value = fmt(climate.cold, 1);
+        els.climateStatus.textContent = "Климатические параметры подобраны автоматически.";
+        return climate;
+      }
+
+      function validateGeometryLocal(inputs) {
+        if (inputs.I5 > inputs.H5) {
+          els.geometryWarning.textContent = "Внимание! Высота дверного проема больше высоты коридора!";
+          return false;
+        }
+        els.geometryWarning.textContent = "";
+        return true;
+      }
+
+      function clearSummary() {
+        els.summaryGrid.innerHTML = "";
+        state.calc = null;
+      }
+
+      function renderMetricCard(title, value, digits, suffix, blue) {
+        return "<div class='metric-card" + (blue ? " metric-blue" : "") + "'>" +
+          "<span class='metric-label'>" + title + "</span>" +
+          "<span class='metric-value'>" + fmt(value, digits) + (suffix ? " " + suffix : "") + "</span>" +
+          "</div>";
+      }
+
+      function render(calc) {
+        els.summaryGrid.innerHTML =
+          renderMetricCard("Производительность вентилятора ДУ", calc.summary.B25, 0, "м³/ч", true) +
+          renderMetricCard("Производительность вентилятора компенсации", calc.summary.B26, 0, "м³/ч", true) +
+          renderMetricCard("Потери давления вентилятора ДУ", calc.summary.B30, 0, "Па", false) +
+          renderMetricCard("Потери давления вентилятора компенсации", calc.summary.B31, 0, "Па", false);
+      }
+
+      function toggleConditionalFields() {
+        var smokeTwo = String(els.smokeValveCount.value) === "2";
+        var compTwo = String(els.compValveCount.value) === "2";
+        els.smokeValve2WidthBlock.classList.toggle("conditional-hidden", !smokeTwo);
+        els.smokeValve2HeightBlock.classList.toggle("conditional-hidden", !smokeTwo);
+        els.compValve2WidthBlock.classList.toggle("conditional-hidden", !compTwo);
+        els.compValve2HeightBlock.classList.toggle("conditional-hidden", !compTwo);
+      }
+
+      function hideCitySuggestions() {
+        els.citySuggest.classList.remove("is-open");
+        els.citySuggest.innerHTML = "";
+        state.citySuggestItems = [];
+        state.citySuggestActive = -1;
+      }
+
+      function updateCitySuggestionActive() {
+        Array.prototype.forEach.call(els.citySuggest.querySelectorAll(".city-suggest-item"), function (node, index) {
+          node.classList.toggle("is-active", index === state.citySuggestActive);
+        });
+      }
+
+      function applyCitySelection(cityName) {
+        els.city.value = cityName;
+        syncClimateFields();
+        hideCitySuggestions();
+        scheduleCalculation();
+      }
+
+      function renderCitySuggestions(query) {
+        var normalizedQuery = normalizeCityName(query);
+        var starts = [];
+        var includes = [];
+        var fallback = [];
+        state.cityData.forEach(function (item) {
+          var cityKey = normalizeCityName(item.city);
+          if (!cityKey) return;
+          if (!normalizedQuery) {
+            fallback.push(item);
+            return;
+          }
+          if (cityKey === normalizedQuery) return;
+          if (cityKey.indexOf(normalizedQuery) === 0) starts.push(item);
+          else if (cityKey.indexOf(normalizedQuery) !== -1) includes.push(item);
+        });
+        state.citySuggestItems = normalizedQuery ? starts.concat(includes).slice(0, 8) : fallback;
+        if (!state.citySuggestItems.length) {
+          hideCitySuggestions();
+          return;
+        }
+        els.citySuggest.innerHTML = state.citySuggestItems.map(function (item, index) {
+          return '<button class="city-suggest-item' + (index === 0 ? ' is-active' : '') + '" type="button" data-city="' + escapeHtml(item.city) + '">' + escapeHtml(item.city) + '</button>';
+        }).join("");
+        state.citySuggestActive = 0;
+        els.citySuggest.classList.add("is-open");
+      }
+
+      function bindCityAutocomplete() {
+        els.city.addEventListener("focus", function () {
+          renderCitySuggestions(els.city.value);
+        });
+        els.city.addEventListener("input", function () {
+          syncClimateFields();
+          renderCitySuggestions(els.city.value);
+        });
+        els.city.addEventListener("keydown", function (event) {
+          if (!els.citySuggest.classList.contains("is-open")) return;
+          if (event.key === "ArrowDown") {
+            event.preventDefault();
+            state.citySuggestActive = Math.min(state.citySuggestActive + 1, state.citySuggestItems.length - 1);
+            updateCitySuggestionActive();
+          } else if (event.key === "ArrowUp") {
+            event.preventDefault();
+            state.citySuggestActive = Math.max(state.citySuggestActive - 1, 0);
+            updateCitySuggestionActive();
+          } else if (event.key === "Enter") {
+            if (state.citySuggestActive >= 0 && state.citySuggestItems[state.citySuggestActive]) {
+              event.preventDefault();
+              applyCitySelection(state.citySuggestItems[state.citySuggestActive].city);
+            }
+          } else if (event.key === "Escape") {
+            hideCitySuggestions();
+          }
+        });
+        els.citySuggest.addEventListener("mousedown", function (event) {
+          var button = event.target.closest(".city-suggest-item");
+          if (!button) return;
+          event.preventDefault();
+          applyCitySelection(button.getAttribute("data-city") || "");
+        });
+        document.addEventListener("click", function (event) {
+          if (event.target === els.city || els.citySuggest.contains(event.target)) return;
+          hideCitySuggestions();
+        });
+      }
+
+      function collectInputs() {
+        var climate = getSelectedClimate() || DEFAULT_CITY;
+        return {
+          objectName: els.objectName.value.trim(),
+          city: els.city.value.trim(),
+          climate: { city: climate.city, cold: climate.cold, warm: climate.warm, wind: climate.wind },
+          B5: Math.max(1, Math.round(toNum(els.floors.value, 3))),
+          C5: Math.max(1, Math.round(toNum(els.firstFloor.value, 1))),
+          D5: toNum(els.floorHeight.value, 3),
+          E5: toNum(els.indoorTemp.value, 16),
+          F5: toNum(els.exhaustHeight.value, 50),
+          G5: toNum(els.intakeHeight.value, 3),
+          H5: toNum(els.corridorHeight.value, 2.7),
+          I5: toNum(els.doorHeight.value, 2.1),
+          J5: toNum(els.doorWidth.value, 0.9),
+          K5: toNum(els.corridorArea.value, 20),
+          L5: toNum(els.corridorLength.value, 25),
+          M5: toNum(els.fireLoad.value, 41),
+          N5: toNum(els.thermalLoad.value, 7),
+          O5: toNum(els.fireDistance.value, 0.5),
+          P5: els.corridorConfig.value,
+          Q5: els.buildingType.value,
+          R5: els.fireRegulation.value,
+          K9: els.smokeMaterial.value,
+          K10: els.compMaterial.value,
+          N10input: toNum(els.compWidth.value, 0.6),
+          B27: toNum(els.smokeHarnessLoss.value, 200),
+          B28: toNum(els.compHarnessLoss.value, 200),
+          F25: Number(els.smokeValveCount.value),
+          K25: Number(els.compValveCount.value),
+          G29: toNum(els.smokeValve2Width.value, 0.7),
+          G30: toNum(els.smokeValve2Height.value, Math.max(0.3, toNum(els.corridorHeight.value, 2.7) - toNum(els.doorHeight.value, 2.1) - 0.05)),
+          L29: toNum(els.compValve2Width.value, 0.5),
+          L30: toNum(els.compValve2Height.value, 0.5)
+        };
+      }
+
+      function buildPayload() {
+        return {
+          meta: MODULE_META,
+          requestMeta: {
+            requestedAt: new Date().toISOString(),
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+            userAgent: navigator.userAgent,
+            page: location.href
+          },
+          inputs: collectInputs()
+        };
+      }
+
+      function normalizeResponse(data) {
+        if (!data || typeof data !== "object" || !data.calc || !data.calc.summary) {
+          throw new Error("Webhook не вернул блок calc.summary.");
+        }
+        return data.calc;
+      }
+
+      function buildReportState() {
+        if (!state.calc) return null;
+        var calc = state.calc;
+        var sections = [];
+        var firstSmokeRow = calc.smokeRows[0];
+        var lastSmokeRow = calc.smokeRows[calc.smokeRows.length - 1];
+        var section3Method = reportFormula([
+          {
+            name: "Максимальная среднеобъемная температура в горящем помещении",
+            formula: calc.inputs.R5 === "ПРВ" ? "T0макс = (273 + tв) + 940·exp(0,0047·q0 − 0,141)" : "T0макс = (273 + tв) + 224·gк^0,528",
+            details: calc.inputs.R5 === "ПРВ"
+              ? ["tв - температура внутреннего воздуха до пожара, °С", "q0 - удельная приведенная пожарная нагрузка, кг/м²"]
+              : ["tв - температура внутреннего воздуха до пожара, °С", "gк - нагрузка к тепловоспринимающим конструкциям, кг/м²"],
+            substitute: calc.inputs.R5 === "ПРВ"
+              ? "T0макс = (273 + " + fmtTrimmed(calc.inputs.E5, 2) + ") + 940·exp(0,0047·" + fmtTrimmed(calc.inputs.M5, 2) + " − 0,141) = " + fmt(calc.products.B8, 2) + " К"
+              : "T0макс = (273 + " + fmtTrimmed(calc.inputs.E5, 2) + ") + 224·" + fmtTrimmed(calc.inputs.N5, 2) + "^0,528 = " + fmt(calc.products.B8, 2) + " К"
+          },
+          {
+            name: "Температура газов, поступающих из помещения в коридор",
+            formula: "T0 = 0,8·T0макс",
+            details: ["T0макс - максимальная среднеобъемная температура в горящем помещении, К"],
+            substitute: "T0 = 0,8·" + fmt(calc.products.B8, 2) + " = " + fmt(calc.products.B9, 2) + " К"
+          },
+          {
+            name: "Температура удаляемых из коридора продуктов горения",
+            formula: "Tпг = Tнач + 1,22·(T0 − (273 + tв))·((2·0,6·Hк + Fк/Lк)/Lк)·(1 − exp(−0,58·Lк/(2·0,6·Hк + Fк/Lк)))",
+            details: ["Tнач - температура в начале коридора, К", "T0 - температура газов, поступающих в коридор, К", "tв - температура внутреннего воздуха до пожара, °С", "Hк - высота коридора, м", "Fк - площадь коридора, м²", "Lк - длина коридора, м"],
+            substitute: "Tпг = " + fmt(round(calc.products.B10 - (1.22 * (calc.products.B9 - (273 + calc.inputs.E5)) * (2 * 0.6 * calc.inputs.H5 + calc.inputs.K5 / calc.inputs.L5) / calc.inputs.L5 * (1 - Math.exp(-0.58 * calc.inputs.L5 / (2 * 0.6 * calc.inputs.H5 + calc.inputs.K5 / calc.inputs.L5)))), 2), 2) + " + 1,22·(" + fmt(calc.products.B9, 2) + " − (273 + " + fmtTrimmed(calc.inputs.E5, 2) + "))·((2·0,6·" + fmtTrimmed(calc.inputs.H5, 2) + " + " + fmtTrimmed(calc.inputs.K5, 2) + "/" + fmtTrimmed(calc.inputs.L5, 2) + ")/" + fmtTrimmed(calc.inputs.L5, 2) + ")·(1 − exp(−0,58·" + fmtTrimmed(calc.inputs.L5, 2) + "/(2·0,6·" + fmtTrimmed(calc.inputs.H5, 2) + " + " + fmtTrimmed(calc.inputs.K5, 2) + "/" + fmtTrimmed(calc.inputs.L5, 2) + "))) = " + fmt(calc.products.B10, 2) + " К"
+          },
+          {
+            name: "Плотность удаляемых продуктов горения",
+            formula: "ρпг = 353/Tпг",
+            details: ["Tпг - температура удаляемых продуктов горения, К"],
+            substitute: "ρпг = 353/" + fmt(calc.products.B10, 2) + " = " + fmt(calc.products.B16, 3) + " кг/м³"
+          }
+        ]);
+        var section4Method = reportFormula([
+          {
+            name: "Наружное давление на наветренном фасаде",
+            formula: "Pннi = 0,4·ρн·Vв² − g·hi·(ρн − ρ1)",
+            details: ["ρн - плотность наружного воздуха, кг/м³", "Vв - скорость ветра, м/с", "g - ускорение свободного падения, м/с²", "hi - высота расчетного этажа, м", "ρ1 - плотность приточного воздуха, кг/м³"],
+            substitute: "Pнн1 = 0,4·" + fmt(calc.products.B11, 3) + "·" + fmt(calc.climate.G10, 1) + "² − 9,81·" + fmt(firstSmokeRow.F, 2) + "·(" + fmt(calc.products.B11, 3) + " − " + fmt(calc.products.B14, 3) + ") = " + fmt(firstSmokeRow.B, 2) + " Па"
+          },
+          {
+            name: "Наружное давление на заветренном фасаде",
+            formula: "Pнзi = −0,3·ρн·Vв² − g·hi·(ρн − ρ1)",
+            details: ["ρн - плотность наружного воздуха, кг/м³", "Vв - скорость ветра, м/с", "hi - высота расчетного этажа, м", "ρ1 - плотность приточного воздуха, кг/м³"],
+            substitute: "Pнз1 = −0,3·" + fmt(calc.products.B11, 3) + "·" + fmt(calc.climate.G10, 1) + "² − 9,81·" + fmt(firstSmokeRow.F, 2) + "·(" + fmt(calc.products.B11, 3) + " − " + fmt(calc.products.B14, 3) + ") = " + fmt(firstSmokeRow.C, 2) + " Па"
+          },
+          {
+            name: "Массовый расход продуктов горения, удаляемых из коридора",
+            formula: "G1 = k·B1·H1^1,5",
+            details: ["k - коэффициент назначения здания", "B1 - ширина дверного проема, м", "H1 - высота дверного проема, м"],
+            substitute: "G1 = " + (normalizeCityName(calc.inputs.Q5) === "жилое" ? "0,96" : "1,2") + "·" + fmtTrimmed(calc.inputs.J5, 2) + "·" + fmtTrimmed(calc.inputs.I5, 2) + "^1,5 = " + fmt(calc.valves.F27 + (calc.valves.G27 || 0), 3) + " кг/с"
+          },
+          {
+            name: "Расчетные параметры на верхнем этаже шахты",
+            formula: "ρш = 353/Tш",
+            details: ["Tш - температура продуктов горения в шахте, К", "ρш - плотность продуктов горения в шахте, кг/м³"],
+            substitute: "ρш = 353/" + fmt(lastSmokeRow.H, 2) + " = " + fmt(lastSmokeRow.I, 3) + " кг/м³; Gш = " + fmt(lastSmokeRow.G, 3) + " кг/с; Vш = " + fmt(lastSmokeRow.J, 2) + " м/с; Pш = " + fmt(lastSmokeRow.E, 2) + " Па"
+          },
+          {
+            name: "Массовый расход воздуха, поступающего в шахту через неплотности",
+            formula: "Gподс = √((Pвi − Pшi)/(12000/Fкл²))",
+            details: ["Pвi - среднее давление в коридоре на этаже, Па", "Pшi - давление в шахте на этаже, Па", "Fкл - площадь проходного сечения клапана, м²"],
+            substitute: "Gподс,2 = √((" + fmt(calc.smokeRows[1] ? calc.smokeRows[1].D : firstSmokeRow.D, 2) + " − " + fmt(calc.smokeRows[1] ? calc.smokeRows[1].E : firstSmokeRow.E, 2) + ")/(12000/" + fmt(calc.valves.F31, 3) + "²)) = " + fmt(calc.smokeRows[1] ? calc.smokeRows[1].K : 0, 3) + " кг/с"
+          }
+        ]);
+        var section6Method = reportFormula([
+          {
+            name: "Производительность вентилятора дымоудаления",
+            formula: "Lвент = 3600·Gш,max/ρN",
+            details: ["Gш,max - максимальный массовый расход в шахте дымоудаления, кг/с", "ρN - плотность продуктов горения на верхнем этаже шахты, кг/м³"],
+            substitute: "Lвент = 3600·" + fmt(calc.summary.G23, 3) + "/" + fmt(calc.summary.I23, 3) + " = " + fmt(calc.summary.B25, 0) + " м³/ч"
+          },
+          {
+            name: "Производительность вентилятора компенсации",
+            formula: "Lвент = 3600·Gпш,max/ρп",
+            details: ["Gпш,max - максимальный массовый расход в шахте компенсации, кг/с", "ρп - плотность приточного воздуха, кг/м³"],
+            substitute: "Lвент = 3600·" + fmt(calc.summary.Q23, 3) + "/" + fmt(calc.products.B15, 3) + " = " + fmt(calc.summary.B26, 0) + " м³/ч"
+          },
+          {
+            name: "Давление вентилятора дымоудаления",
+            formula: "Pвент = Pвыбр − PшN + g·hN·(ρN − ρ1) + ΔPсети",
+            details: ["Pвыбр - давление у выбросного отверстия, Па", "PшN - давление в шахте на верхнем этаже, Па", "hN - высота от верхнего клапана до выброса, м", "ρN - плотность в шахте на верхнем этаже, кг/м³", "ρ1 - плотность приточного воздуха, кг/м³", "ΔPсети - потери давления в обвязке, Па"],
+            substitute: "Pвент = " + fmt(calc.summary.B23, 2) + " − (" + fmt(lastSmokeRow.E, 2) + ") + 9,81·(" + fmtTrimmed(calc.inputs.F5, 2) + " − " + fmt(lastSmokeRow.F, 2) + ")·(" + fmt(lastSmokeRow.I, 3) + " − " + fmt(calc.products.B14, 3) + ") + " + fmt(calc.inputs.B27, 0) + " = " + fmt(calc.summary.B29, 2) + " Па"
+          },
+          {
+            name: "Давление вентилятора дымоудаления при нормальных условиях",
+            formula: "Pн.у. = 1,2·Pвент/ρN",
+            details: ["Pвент - расчетное давление вентилятора дымоудаления, Па", "ρN - плотность продуктов горения на верхнем этаже шахты, кг/м³"],
+            substitute: "Pн.у. = 1,2·" + fmt(calc.summary.B29, 2) + "/" + fmt(calc.summary.I23, 3) + " = " + fmt(calc.summary.B30, 0) + " Па"
+          },
+          {
+            name: "Давление вентилятора компенсации",
+            formula: "Pвент,комп = Pрасч + ΔPсети",
+            details: ["Pрасч - расчетное давление системы компенсации, Па", "ΔPсети - потери давления в обвязке, Па"],
+            substitute: "Pвент,комп = Pрасч + " + fmt(calc.inputs.B28, 0) + " = " + fmt(calc.summary.B31, 0) + " Па"
+          }
+        ]);
+        var section8Method = reportFormula([
+          {
+            name: "Массовый расход через клапан компенсации",
+            formula: "Gкл = Gрасч",
+            details: ["Gрасч - расчетный массовый расход системы компенсации, кг/с"],
+            substitute: "Gкл = " + fmt(calc.valves.K27, 3) + " кг/с"
+          },
+          {
+            name: "Объемный расход через клапан компенсации",
+            formula: "Lкл = 3600·Gкл/ρп",
+            details: ["Gкл - массовый расход через клапан, кг/с", "ρп - плотность приточного воздуха, кг/м³"],
+            substitute: "Lкл = 3600·" + fmt(calc.valves.K27, 3) + "/" + fmt(calc.products.B15, 3) + " = " + fmt(calc.valves.K28, 1) + " м³/ч"
+          },
+          {
+            name: "Площадь проходного сечения клапана компенсации",
+            formula: "Fкл = (aкл − 0,026)·(bкл − 0,086)",
+            details: ["aкл - ширина клапана, м", "bкл - высота клапана, м"],
+            substitute: "Fкл = (" + fmt(calc.valves.K29, 2) + " − 0,026)·(" + fmt(calc.valves.K30, 2) + " − 0,086) = " + fmt(calc.valves.K31, 3) + " м²"
+          },
+          {
+            name: "Скорость в клапане компенсации",
+            formula: "Vкл = Gкл/(ρп·Fкл)",
+            details: ["Gкл - массовый расход через клапан, кг/с", "ρп - плотность приточного воздуха, кг/м³", "Fкл - площадь проходного сечения клапана, м²"],
+            substitute: "Vкл = " + fmt(calc.valves.K27, 3) + "/(" + fmt(calc.products.B15, 3) + "·" + fmt(calc.valves.K31, 3) + ") = " + fmt(calc.valves.K32, 2) + " м/с"
+          },
+          {
+            name: "Потери давления в клапане компенсации",
+            formula: "ΔPкл = 4·ρп·Vкл²/2",
+            details: ["ρп - плотность приточного воздуха, кг/м³", "Vкл - скорость в клапане, м/с"],
+            substitute: "ΔPкл = 4·" + fmt(calc.products.B15, 3) + "·" + fmt(calc.valves.K32, 2) + "²/2 = " + fmt(calc.valves.K33, 2) + " Па"
+          }
+        ]);
+        var section7Method = reportFormula([
+          {
+            name: "Массовый расход через клапан дымоудаления",
+            formula: "Gкл = Gрасч",
+            details: ["Gрасч - расчетный массовый расход удаляемых продуктов горения, кг/с"],
+            substitute: "Gкл = " + fmt(calc.valves.F27, 3) + " кг/с"
+          },
+          {
+            name: "Объемный расход через клапан дымоудаления",
+            formula: "Lкл = 3600·Gкл/ρпг",
+            details: ["Gкл - массовый расход через клапан, кг/с", "ρпг - плотность удаляемых продуктов горения, кг/м³"],
+            substitute: "Lкл = 3600·" + fmt(calc.valves.F27, 3) + "/" + fmt(calc.products.B16, 3) + " = " + fmt(calc.valves.F28, 1) + " м³/ч"
+          },
+          {
+            name: "Площадь проходного сечения клапана дымоудаления",
+            formula: "Fкл = (aкл − 0,026)·(bкл − 0,086)",
+            details: ["aкл - ширина клапана, м", "bкл - высота клапана, м"],
+            substitute: "Fкл = (" + fmt(calc.valves.F29, 2) + " − 0,026)·(" + fmt(calc.valves.F30, 2) + " − 0,086) = " + fmt(calc.valves.F31, 3) + " м²"
+          },
+          {
+            name: "Скорость в клапане дымоудаления",
+            formula: "Vкл = Gкл/(ρпг·Fкл)",
+            details: ["Gкл - массовый расход через клапан, кг/с", "ρпг - плотность удаляемых продуктов горения, кг/м³", "Fкл - площадь проходного сечения клапана, м²"],
+            substitute: "Vкл = " + fmt(calc.valves.F27, 3) + "/(" + fmt(calc.products.B16, 3) + "·" + fmt(calc.valves.F31, 3) + ") = " + fmt(calc.valves.F32, 2) + " м/с"
+          },
+          {
+            name: "Потери давления в клапане дымоудаления",
+            formula: "ΔPкл = 4·ρпг·Vкл²/2",
+            details: ["ρпг - плотность удаляемых продуктов горения, кг/м³", "Vкл - скорость в клапане, м/с"],
+            substitute: "ΔPкл = 4·" + fmt(calc.products.B16, 3) + "·" + fmt(calc.valves.F32, 2) + "²/2 = " + fmt(calc.valves.F33, 2) + " Па"
+          }
+        ]);
+        sections.push({
+          title: "1. Исходные данные",
+          type: "pairs",
+          rows: [
+            ["Объект", calc.inputs.objectName || "Без названия"],
+            ["Населенный пункт", calc.inputs.city],
+            ["Кол-во этажей в здании", String(calc.inputs.B5)],
+            ["Первый расчетный этаж", String(calc.inputs.C5)],
+            ["Высота этажа, м", fmtTrimmed(calc.inputs.D5, 2)],
+            ["Температура внутреннего воздуха в помещении до начала пожара, °С", fmtTrimmed(calc.inputs.E5, 2)],
+            ["Высота выброса продуктов горения от ур. земли, м", fmtTrimmed(calc.inputs.F5, 2)],
+            ["Высота воздухозабора ПДУ от ур. земли, м", fmtTrimmed(calc.inputs.G5, 2)],
+            ["Высота коридора, м", fmtTrimmed(calc.inputs.H5, 2)],
+            ["Высота двери в лестничную клетку, м", fmtTrimmed(calc.inputs.I5, 2)],
+            ["Ширина двери в лестничную клетку, м", fmtTrimmed(calc.inputs.J5, 2)],
+            ["Площадь коридора, м²", fmtTrimmed(calc.inputs.K5, 2)],
+            ["Длина коридора, м", fmtTrimmed(calc.inputs.L5, 2)],
+            ["Удельная приведенная пожарная нагрузка отнесенная к площади пола q0, кг/м²", fmtTrimmed(calc.inputs.M5, 2)],
+            ["Удел. приведен. пож. нагруз. к площади тепловоспр. констр. gк, кг/м²", fmtTrimmed(calc.inputs.N5, 2)],
+            ["Минимальное расстояние от помещения с очагом пожара до дымового клапана, м", fmtTrimmed(calc.inputs.O5, 2)],
+            ["Конфигурация коридора", calc.inputs.P5],
+            ["Назначение здания", calc.inputs.Q5],
+            ["Тип регулирования пожара", calc.inputs.R5]
+          ]
+        });
+        sections.push({
+          title: "2. Климатические данные",
+          type: "table",
+          headers: ["Показатель", "Значение"],
+          rows: [
+            ["Температура наружного воздуха в теплый период года, °С", fmt(calc.climate.E10, 1)],
+            ["Температура наружного воздуха в холодный период года, °С", fmt(calc.climate.F10, 1)],
+            ["Скорость ветра для расчета ДУ с учетом высоты выброса, м/с", fmt(calc.climate.G10, 1)],
+            ["Скорость ветра для расчета ПДВ с учетом высоты воздухозабора, м/с", fmt(calc.climate.H10, 1)]
+          ]
+        });
+        sections.push({
+          title: "3. Характеристики продуктов горения",
+          type: "table",
+          headers: ["Показатель", "Значение"],
+          method: section3Method,
+          rows: [
+            ["Максимальная среднеобъемная температура в горящем помещенииT0макс, К", fmt(calc.products.B8, 2)],
+            ["Температура газов поступающих из горящего помещения в коридор T0, К", fmt(calc.products.B9, 2)],
+            ["Температура продуктов горения удаляемых из коридора Tпг, К", fmt(calc.products.B10, 2)],
+            ["Плотность наружного воздуха ТПГ ρн, кг/м³", fmt(calc.products.B11, 3)],
+            ["Плотность наружного воздуха ХПГ ρн, кг/м³", fmt(calc.products.B12, 3)],
+            ["Плотность внутреннего  воздуха ρв, кг/м³", fmt(calc.products.B13, 3)],
+            ["Плотность приточного  воздуха ТПГ ρп, кг/м³", fmt(calc.products.B14, 3)],
+            ["Плотность приточного  воздуха ХПГ ρп, кг/м³", fmt(calc.products.B15, 3)],
+            ["Плотность удаляемых продуктов горения ρпг, кг/м³", fmt(calc.products.B16, 3)]
+          ]
+        });
+        sections.push({
+          title: "4. Давление и расходы по этажам дымоудаления",
+          type: "table",
+          headers: ["Этаж", "Pннi", "Pнзi", "Pвi", "Pшi", "h", "Gш", "Tш", "ρш", "Vш", "Подсосы"],
+          method: section4Method,
+          rows: calc.smokeRows.map(function (row) {
+            return [row.A, fmt(row.B, 2), fmt(row.C, 2), fmt(row.D, 2), fmt(row.E, 2), fmt(row.F, 2), fmt(row.G, 3), fmt(row.H, 2), fmt(row.I, 3), fmt(row.J, 2), fmt(row.K, 3)];
+          })
+        });
+        sections.push({
+          title: "5. Давление и расходы по этажам компенсации",
+          type: "table",
+          headers: ["Этаж", "Pпннi", "Pпнзi", "Pпвi", "Pпшi", "hп", "Gпш", "Tпш", "ρпш", "Vпш", "Подсосы"],
+          rows: calc.compRows.map(function (row) {
+            return [row.A, fmt(row.L, 2), fmt(row.M, 2), fmt(row.N, 2), fmt(row.O, 2), fmt(row.P, 2), fmt(row.Q, 3), fmt(row.R, 2), fmt(row.S, 3), fmt(row.T, 2), row.U == null ? "—" : fmt(row.U, 3)];
+          })
+        });
+        sections.push({
+          title: "6. Характеристика оборудования",
+          type: "table",
+          headers: ["Показатель", "Значение"],
+          method: section6Method,
+          rows: [
+            ["Производительность вентилятора дымоудаления Lвент, м³/ч", fmt(calc.summary.B25, 0)],
+            ["Производительность вентилятора компенсации Lвент, м³/ч", fmt(calc.summary.B26, 0)],
+            ["Потери давления в обвязке вентилятора дымоудаления, Па", fmt(calc.inputs.B27, 0)],
+            ["Потери давления в обвязке вентилятора компенсации, Па", fmt(calc.inputs.B28, 0)],
+            ["Потери давления вентилятора дымоудаления, Па", fmt(calc.summary.B29, 2)],
+            ["Потери давления вентилятора дымоудаления при н.у. Па", fmt(calc.summary.B30, 0)],
+            ["Потери давления вентилятора компенсации, Па", fmt(calc.summary.B31, 0)]
+          ]
+        });
+        sections.push({
+          title: "7. Характеристики клапана-дымоприемника",
+          type: "table",
+          headers: ["Показатель", "Значение"],
+          method: section7Method,
+          rows: [
+            ["Кол-во клапанов", String(calc.inputs.F25)],
+            ["Массовый расход клапана №1, кг/с", fmt(calc.valves.F27, 3)],
+            ["Массовый расход клапана №2, кг/с", calc.valves.G27 == null ? "—" : fmt(calc.valves.G27, 3)],
+            ["Объемный расход клапана №1, м³/ч", fmt(calc.valves.F28, 1)],
+            ["Объемный расход клапана №2, м³/ч", calc.valves.G28 == null ? "—" : fmt(calc.valves.G28, 1)],
+            ["Ширина клапана №1, м", fmt(calc.valves.F29, 2)],
+            ["Высота клапана №1, м", fmt(calc.valves.F30, 2)],
+            ["Площадь проходного сечения клапана №1, м²", fmt(calc.valves.F31, 3)],
+            ["Скорость в клапане №1, м/с", fmt(calc.valves.F32, 2)],
+            ["Потери давления в клапане №1, Па", fmt(calc.valves.F33, 2)]
+          ]
+        });
+        sections.push({
+          title: "8. Характеристики клапана компенсации",
+          type: "table",
+          headers: ["Показатель", "Значение"],
+          method: section8Method,
+          rows: [
+            ["Кол-во клапанов", String(calc.inputs.K25)],
+            ["Массовый расход клапана №1, кг/с", fmt(calc.valves.K27, 3)],
+            ["Массовый расход клапана №2, кг/с", calc.valves.L27 == null ? "—" : fmt(calc.valves.L27, 3)],
+            ["Объемный расход клапана №1, м³/ч", fmt(calc.valves.K28, 1)],
+            ["Объемный расход клапана №2, м³/ч", calc.valves.L28 == null ? "—" : fmt(calc.valves.L28, 1)],
+            ["Ширина клапана №1, м", fmt(calc.valves.K29, 2)],
+            ["Высота клапана №1, м", fmt(calc.valves.K30, 2)],
+            ["Площадь проходного сечения клапана №1, м²", fmt(calc.valves.K31, 3)],
+            ["Скорость в клапане №1, м/с", fmt(calc.valves.K32, 2)],
+            ["Потери давления в клапане №1, Па", fmt(calc.valves.K33, 2)]
+          ]
+        });
+        sections.push({
+          title: "9. Характеристика шахт",
+          type: "table",
+          headers: ["Шахта", "Материал", "ζтр", "Ширина", "Глубина", "dэкв", "Площадь", "Скорость"],
+          rows: [
+            ["Дымоудаление", calc.inputs.K9, fmt(calc.shaft.M9, 2), fmt(calc.shaft.N9, 2), fmt(calc.shaft.O9, 2), fmt(calc.shaft.P9, 3), fmt(calc.shaft.Q9, 3), fmt(calc.shaft.R9, 3)],
+            ["Компенсация", calc.inputs.K10, fmt(calc.shaft.M10, 2), fmt(calc.shaft.N10, 2), fmt(calc.shaft.O10, 2), fmt(calc.shaft.P10, 3), fmt(calc.shaft.Q10, 3), fmt(calc.shaft.R10, 3)]
+          ]
+        });
+        return {
+          title: "Расчет системы противодымной вентиляции коридора",
+          objectName: calc.inputs.objectName || "Без названия",
+          createdAt: new Date().toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }),
+          sections: sections
+        };
+      }
+
+      function buildReportHtml() {
+        var report = buildReportState();
+        if (!report) return "";
+        var html = "<div class='report-root'><h1>" + report.title + "</h1>";
+        html += "<p><strong>Объект:</strong> " + report.objectName + "<br><strong>Дата и время:</strong> " + report.createdAt + "</p>";
+        report.sections.forEach(function (section) {
+          html += "<h2>" + section.title + "</h2>";
+          if (section.type === "pairs") {
+            html += "<table><thead><tr><th>Показатель</th><th>Значение</th></tr></thead><tbody>";
+            section.rows.forEach(function (row) {
+              html += "<tr><td>" + row[0] + "</td><td>" + row[1] + "</td></tr>";
+            });
+            html += "</tbody></table>";
+          } else {
+            html += "<table><thead><tr>";
+            section.headers.forEach(function (header) { html += "<th>" + header + "</th>"; });
+            html += "</tr></thead><tbody>";
+            section.rows.forEach(function (row) {
+              html += "<tr>";
+              row.forEach(function (cell) { html += "<td>" + cell + "</td>"; });
+              html += "</tr>";
+            });
+            html += "</tbody></table>";
+          }
+          if (section.method && section.method.items && section.method.items.length) {
+            html += "<div class='report-method'><div class='report-method-title'>" + section.method.title + "</div>";
+            section.method.items.forEach(function (item) {
+              html += "<div class='report-method-item'>";
+              html += "<p class='report-method-name'>" + item.name + "</p>";
+              html += "<p class='report-method-formula'>" + item.formula + "</p>";
+              (item.details || []).forEach(function (detail) {
+                html += "<p class='report-method-line'>" + detail + "</p>";
+              });
+              html += "<p class='report-method-line'><strong>Подстановка:</strong></p>";
+              html += "<p class='report-method-line'>" + item.substitute + "</p>";
+              html += "</div>";
+            });
+            html += "</div>";
+          }
+        });
+        return html + "</div>";
+      }
+
+      function exportPdf() {
+        var report = buildReportState();
+        if (!report) return;
+        setStatus("Формирование PDF...", "loading");
+        ensurePdfLibs().then(function (pdfMakeLib) {
+          var headerLogoUrl = "https://optim.tildacdn.com/tild3933-6438-4633-b733-306266393934/-/resize/500x/-/format/webp/logo_mail.png.webp";
+          var headerSiteText = "osnovaprof.ru";
+          var headerRightText = "FireVent Calc © v.2.2.1.1 2018-2025 osnova@osnovaprof.ru";
+          function loadLogo() {
+            return fetch(headerLogoUrl).then(function (response) {
+              if (!response.ok) throw new Error("Logo fetch failed");
+              return response.blob();
+            }).then(function (blob) {
+              return new Promise(function (resolve) {
+                var url = URL.createObjectURL(blob);
+                var img = new Image();
+                img.crossOrigin = "anonymous";
+                img.onload = function () {
+                  try {
+                    var canvas = document.createElement("canvas");
+                    canvas.width = img.naturalWidth;
+                    canvas.height = img.naturalHeight;
+                    var ctx = canvas.getContext("2d");
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0);
+                    resolve(canvas.toDataURL("image/png"));
+                  } catch (err) {
+                    resolve(null);
+                  } finally {
+                    URL.revokeObjectURL(url);
+                  }
+                };
+                img.onerror = function () {
+                  resolve(null);
+                  URL.revokeObjectURL(url);
+                };
+                img.src = url;
+              });
+            }).catch(function () {
+              return null;
+            });
+          }
+          function buildTableBody(section) {
+            var body = [];
+            body.push((section.type === "pairs" ? ["Показатель", "Значение"] : section.headers).map(function (cell) {
+              return { text: String(cell), style: "tableHeader", alignment: "center" };
+            }));
+            section.rows.forEach(function (row) {
+              body.push(row.map(function (cell) {
+                return { text: String(cell == null ? "" : cell), style: "tableCell" };
+              }));
+            });
+            return body;
+          }
+          function buildSectionBlock(section) {
+            var isWideSection = /^4\.|^5\.|^9\./.test(section.title);
+            var widths = section.type === "pairs" ? [330, "*"] : Array(section.headers.length).fill("*");
+            if (section.title.indexOf("4. Давление и расходы по этажам дымоудаления") === 0) {
+              widths = [38, 50, 50, 50, 50, 36, 42, 44, 42, 38, 46];
+            } else if (section.title.indexOf("5. Давление и расходы по этажам компенсации") === 0) {
+              widths = [38, 52, 52, 50, 52, 36, 44, 44, 44, 40, 48];
+            } else if (section.title.indexOf("9. Характеристика шахт") === 0) {
+              widths = [88, 70, 38, 46, 46, 46, 50, 52];
+            }
+            var block = [
+              { text: section.title, style: "sectionTitle", margin: [0, 10, 0, 6], pageOrientation: isWideSection ? "landscape" : "portrait", pageBreak: isWideSection ? "before" : undefined },
+              {
+                table: {
+                  headerRows: 1,
+                  widths: widths,
+                  body: buildTableBody(section)
+                },
+                fontSize: isWideSection ? 9 : undefined,
+                layout: {
+                  hLineWidth: function () { return 0.7; },
+                  vLineWidth: function () { return 0.7; },
+                  hLineColor: function () { return "#7b8794"; },
+                  vLineColor: function () { return "#7b8794"; },
+                  paddingLeft: function () { return isWideSection ? 4 : 6; },
+                  paddingRight: function () { return isWideSection ? 4 : 6; },
+                  paddingTop: function () { return isWideSection ? 4 : 5; },
+                  paddingBottom: function () { return isWideSection ? 4 : 5; }
+                },
+                pageOrientation: isWideSection ? "landscape" : "portrait"
+              }
+            ];
+            if (section.method && section.method.items && section.method.items.length) {
+              block.push({ text: section.method.title, style: "methodTitle", margin: [0, 10, 0, 6] });
+              section.method.items.forEach(function (item) {
+                block.push({ text: item.name, style: "methodName", margin: [0, 0, 0, 4] });
+                block.push({ text: item.formula, style: "methodFormula", alignment: "center", margin: [0, 0, 0, 6] });
+                (item.details || []).forEach(function (detail) {
+                  block.push({ text: detail, style: "methodText", margin: [0, 0, 0, 2] });
+                });
+                block.push({ text: "Подстановка:", style: "methodName", margin: [0, 4, 0, 2] });
+                block.push({ text: item.substitute, style: "methodText", margin: [0, 0, 0, 8] });
+              });
+            }
+            return block;
+          }
+          return loadLogo().then(function (logoInfo) {
+            function buildHeaderColumns() {
+              var columns = [];
+              if (logoInfo) {
+                columns.push({ width: 76, image: logoInfo, fit: [76, 26] });
+              } else {
+                columns.push({ width: 76, text: "" });
+              }
+              columns.push({ width: 120, text: headerSiteText, style: "headerLeft", margin: [8, 5, 0, 0] });
+              columns.push({ width: "*", text: headerRightText, style: "headerRight", margin: [0, 5, 0, 0] });
+              return columns;
+            }
+            var content = [
+              { text: report.title, style: "reportTitle", alignment: "center", margin: [0, 0, 0, 10] },
+              { text: "Объект: " + report.objectName, style: "metaBold", margin: [0, 0, 0, 4] },
+              { text: "Дата и время создания: " + report.createdAt, style: "meta", margin: [0, 0, 0, 10] }
+            ];
+            report.sections.forEach(function (section) {
+              buildSectionBlock(section).forEach(function (node) { content.push(node); });
+            });
+            var docDefinition = {
+              pageSize: "A4",
+              pageMargins: [32, 62, 32, 42],
+              defaultStyle: {
+                font: "Roboto",
+                fontSize: 11,
+                color: "#111111"
+              },
+              header: function () {
+                return {
+                  margin: [32, 14, 32, 0],
+                  stack: [
+                    {
+                      columns: buildHeaderColumns()
+                    },
+                    { canvas: [{ type: "line", x1: 0, y1: 8, x2: 531, y2: 8, lineWidth: 0.8, lineColor: "#d2d7df" }] }
+                  ]
+                };
+              },
+              footer: function (currentPage, pageCount) {
+                return {
+                  margin: [32, 0, 32, 8],
+                  stack: [
+                    { canvas: [{ type: "line", x1: 0, y1: 0, x2: 531, y2: 0, lineWidth: 0.8, lineColor: "#d2d7df" }] },
+                    { text: String(currentPage) + "-" + String(pageCount), alignment: "center", margin: [0, 4, 0, 0], fontSize: 11 }
+                  ]
+                };
+              },
+              styles: {
+                reportTitle: { fontSize: 18, bold: true },
+                metaBold: { fontSize: 11, bold: true },
+                meta: { fontSize: 10, color: "#555555" },
+                sectionTitle: { fontSize: 15, bold: true },
+                tableHeader: { fontSize: 11, bold: true, fillColor: "#EEEEEE", color: "#111111" },
+                tableCell: { fontSize: 11, color: "#111111" },
+                methodTitle: { fontSize: 12, bold: true },
+                methodName: { fontSize: 11, bold: true },
+                methodFormula: { fontSize: 11, bold: true },
+                methodText: { fontSize: 11 },
+                headerLeft: { fontSize: 11 },
+                headerRight: { fontSize: 10, bold: true, alignment: "right" }
+              },
+              content: content
+            };
+            pdfMakeLib.createPdf(docDefinition).download(fileSafeName(state.calc.inputs.objectName || "raschet_dymoudaleniya_koridora") + ".pdf");
+            setStatus("PDF сформирован.", "");
+          });
+        }).catch(function (err) {
+          console.error(err);
+          setStatus("Не удалось сформировать PDF: " + (err && err.message ? err.message : "неизвестная ошибка"), "error");
+        });
+      }
+
+      function exportDocx() {
+        var report = buildReportState();
+        if (!report) return;
+        setStatus("Формирование DOCX...", "loading");
+        ensureDocxLibs().then(function () {
+          var d = window.docx;
+          var border = { style: d.BorderStyle.SINGLE, size: 4, color: "6F7780" };
+          var headerLogoUrl = "https://optim.tildacdn.com/tild3933-6438-4633-b733-306266393934/-/resize/500x/-/format/webp/logo_mail.png.webp";
+          var headerSiteText = "osnovaprof.ru";
+          var headerProgramText = "FireVent Calc © v.2.2.1.1";
+          var headerContactText = "2018-2025 osnova@osnovaprof.ru";
+          function paragraph(text, bold, align, color, spacingAfter) {
+            return new d.Paragraph({
+              alignment: align || d.AlignmentType.LEFT,
+              spacing: { after: spacingAfter == null ? 120 : spacingAfter },
+              children: [new d.TextRun({
+                text: String(text == null ? "" : text),
+                bold: !!bold,
+                font: "Cambria",
+                size: 22,
+                color: color || "111111"
+              })]
+            });
+          }
+          function spacerParagraph() {
+            return new d.Paragraph({
+              spacing: { after: 120 },
+              children: [new d.TextRun({ text: "", font: "Cambria", size: 22 })]
+            });
+          }
+          function methodParagraph(text, bold) {
+            return new d.Paragraph({
+              spacing: { after: 80 },
+              children: [new d.TextRun({
+                text: String(text == null ? "" : text),
+                bold: !!bold,
+                font: "Cambria",
+                size: 20,
+                color: "111111"
+              })]
+            });
+          }
+          function methodFormulaParagraph(text) {
+            return new d.Paragraph({
+              alignment: d.AlignmentType.CENTER,
+              spacing: { after: 80 },
+              children: [new d.TextRun({
+                text: String(text == null ? "" : text),
+                bold: true,
+                font: "Cambria",
+                size: 20,
+                color: "111111"
+              })]
+            });
+          }
+          function tableFromSection(section) {
+            var rows = [];
+            rows.push(new d.TableRow({
+              tableHeader: true,
+              children: section.headers.map(function (header) {
+                return new d.TableCell({
+                  shading: { fill: "EEEEEE", type: d.ShadingType.CLEAR, color: "auto" },
+                  borders: { top: border, bottom: border, left: border, right: border },
+                  children: [paragraph(header, true, d.AlignmentType.CENTER)]
+                });
+              })
+            }));
+            section.rows.forEach(function (row) {
+              rows.push(new d.TableRow({
+                children: row.map(function (cell) {
+                  return new d.TableCell({
+                    borders: { top: border, bottom: border, left: border, right: border },
+                    children: [paragraph(cell, false)]
+                  });
+                })
+              }));
+            });
+            return new d.Table({
+              width: { size: 100, type: d.WidthType.PERCENTAGE },
+              rows: rows
+            });
+          }
+          function buildDocHeader(logoInfo) {
+            var noBorder = {
+              top: { style: d.BorderStyle.NONE, size: 0, color: "FFFFFF" },
+              bottom: { style: d.BorderStyle.NONE, size: 0, color: "FFFFFF" },
+              left: { style: d.BorderStyle.NONE, size: 0, color: "FFFFFF" },
+              right: { style: d.BorderStyle.NONE, size: 0, color: "FFFFFF" }
+            };
+            var logoChildren = [new d.Paragraph({
+              spacing: { after: 0 },
+              children: logoInfo ? [new d.ImageRun({
+                data: logoInfo.data,
+                transformation: { width: logoInfo.width, height: logoInfo.height }
+              })] : []
+            })];
+            return new d.Header({
+              children: [
+                new d.Table({
+                  width: { size: 100, type: d.WidthType.PERCENTAGE },
+                  borders: {
+                    top: noBorder.top,
+                    bottom: noBorder.bottom,
+                    left: noBorder.left,
+                    right: noBorder.right,
+                    insideHorizontal: { style: d.BorderStyle.NONE, size: 0, color: "FFFFFF" },
+                    insideVertical: { style: d.BorderStyle.NONE, size: 0, color: "FFFFFF" }
+                  },
+                  rows: [new d.TableRow({
+                    children: [
+                      new d.TableCell({
+                        width: { size: 24, type: d.WidthType.PERCENTAGE },
+                        verticalAlign: d.VerticalAlign.CENTER,
+                        borders: noBorder,
+                        children: logoChildren
+                      }),
+                      new d.TableCell({
+                        width: { size: 26, type: d.WidthType.PERCENTAGE },
+                        verticalAlign: d.VerticalAlign.CENTER,
+                        borders: noBorder,
+                        children: [new d.Paragraph({
+                          spacing: { after: 0 },
+                          children: [new d.TextRun({
+                            text: headerSiteText,
+                            font: "Cambria",
+                            size: 18,
+                            color: "111111"
+                          })]
+                        })]
+                      }),
+                      new d.TableCell({
+                        width: { size: 50, type: d.WidthType.PERCENTAGE },
+                        verticalAlign: d.VerticalAlign.CENTER,
+                        borders: noBorder,
+                        children: [
+                          new d.Paragraph({
+                            alignment: d.AlignmentType.RIGHT,
+                            spacing: { after: 0 },
+                            children: [new d.TextRun({
+                              text: headerProgramText + " " + headerContactText,
+                              font: "Cambria",
+                              size: 18,
+                              bold: true,
+                              color: "111111"
+                            })]
+                          })
+                        ]
+                      })
+                    ]
+                  })]
+                })
+              ]
+            });
+          }
+          function buildDocFooter() {
+            return new d.Footer({
+              children: [new d.Paragraph({
+                alignment: d.AlignmentType.CENTER,
+                spacing: { after: 0 },
+                children: [new d.TextRun({
+                  font: "Cambria",
+                  size: 18,
+                  color: "111111",
+                  children: [d.PageNumber.CURRENT, "-", d.PageNumber.TOTAL_PAGES]
+                })]
+              })]
+            });
+          }
+          function resolveLogoInfo(data) {
+            if (!data) return Promise.resolve(null);
+            return new Promise(function (resolve) {
+              try {
+                var blob = new Blob([data], { type: "image/webp" });
+                var url = URL.createObjectURL(blob);
+                var img = new Image();
+                img.onload = function () {
+                  var maxWidth = 230;
+                  var maxHeight = 58;
+                  var scale = Math.min(maxWidth / img.naturalWidth, maxHeight / img.naturalHeight, 1);
+                  resolve({
+                    data: data,
+                    width: Math.max(1, Math.round(img.naturalWidth * scale)),
+                    height: Math.max(1, Math.round(img.naturalHeight * scale))
+                  });
+                  URL.revokeObjectURL(url);
+                };
+                img.onerror = function () {
+                  resolve({ data: data, width: 170, height: 42 });
+                  URL.revokeObjectURL(url);
+                };
+                img.src = url;
+              } catch (err) {
+                resolve({ data: data, width: 170, height: 42 });
+              }
+            });
+          }
+          var children = [
+            paragraph(report.title, true, d.AlignmentType.CENTER),
+            paragraph("Объект: " + report.objectName, true),
+            paragraph("Дата и время создания: " + report.createdAt, false, d.AlignmentType.LEFT, "555555"),
+            spacerParagraph()
+          ];
+          report.sections.forEach(function (section) {
+            children.push(paragraph(section.title, true));
+            if (section.type === "pairs") {
+              children.push(tableFromSection({ headers: ["Показатель", "Значение"], rows: section.rows }));
+            } else {
+              children.push(tableFromSection(section));
+            }
+            if (section.method && section.method.items && section.method.items.length) {
+              children.push(methodParagraph(section.method.title, true));
+              section.method.items.forEach(function (item) {
+                children.push(methodParagraph(item.name, true));
+                children.push(methodFormulaParagraph(item.formula));
+                (item.details || []).forEach(function (detail) {
+                  children.push(methodParagraph(detail, false));
+                });
+                children.push(methodParagraph("Подстановка:", true));
+                children.push(methodParagraph(item.substitute, false));
+                children.push(methodParagraph("", false));
+              });
+            }
+            children.push(spacerParagraph());
+          });
+          return fetch(headerLogoUrl).then(function (response) {
+            if (!response.ok) throw new Error("Logo fetch failed");
+            return response.arrayBuffer();
+          }).then(function (buffer) {
+            return new Uint8Array(buffer);
+          }).catch(function () {
+            return null;
+          }).then(function (logoData) {
+            return resolveLogoInfo(logoData);
+          }).then(function (logoInfo) {
+            var doc = new d.Document({
+              sections: [{
+                properties: { page: { margin: { top: 1440, right: 720, bottom: 720, left: 720 } } },
+                headers: { default: buildDocHeader(logoInfo) },
+                footers: { default: buildDocFooter() },
+                children: children
+              }]
+            });
+            return d.Packer.toBlob(doc);
+          }).then(function (blob) {
+            downloadBlob(blob, fileSafeName(report.objectName || "raschet_dymoudaleniya_koridora") + ".docx");
+            setStatus("DOCX сформирован.", "");
+          });
+        }).catch(function (err) {
+          console.error(err);
+          setStatus("Не удалось сформировать DOCX.", "error");
+        });
+      }
+
+      function requestCalculation() {
+        var payload = buildPayload();
+        if (!payload.inputs.city) {
+          clearSummary();
+          setStatus('Сначала заполните поле "Населенный пункт".', "");
+          return;
+        }
+        if (!validateGeometryLocal(payload.inputs)) {
+          clearSummary();
+          setStatus("Проверьте геометрические параметры коридора.", "error");
+          return;
+        }
+        var requestId = ++state.calcRequestSeq;
+        if (state.currentController) state.currentController.abort();
+        state.currentController = window.AbortController ? new AbortController() : null;
+        setStatus("Выполняется расчет через n8n...", "loading");
+        fetch(WEBHOOK_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          signal: state.currentController ? state.currentController.signal : undefined
+        }).then(function (response) {
+          if (!response.ok) throw new Error("HTTP " + response.status);
+          return response.json();
+        }).then(function (data) {
+          if (requestId !== state.calcRequestSeq) return;
+          state.calc = normalizeResponse(data);
+          render(state.calc);
+          setStatus(data.statusMessage || ("Расчет обновлен: " + new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit", second: "2-digit" })), data.statusIsError ? "error" : "");
+        }).catch(function (err) {
+          if (err && err.name === "AbortError") return;
+          console.error(err);
+          clearSummary();
+          setStatus("Расчетный сервер недоступен, попробуйте повторить позже.", "error");
+        });
+      }
+
+      function scheduleCalculation() {
+        clearTimeout(state.debounceTimer);
+        state.debounceTimer = setTimeout(requestCalculation, 250);
+      }
+
+      function initClimate() {
+        state.cityData = CITY_DATA.map(function (row) {
+          return { city: row[0], cold: row[1], wind: row[2], warm: row[3] };
+        });
+        state.climateMap = {};
+        state.cityData.forEach(function (item) {
+          state.climateMap[normalizeCityName(item.city)] = item;
+        });
+        syncClimateFields();
+      }
+
+      Array.prototype.forEach.call(document.querySelectorAll("input, select"), function (el) {
+        el.addEventListener("input", scheduleCalculation);
+        el.addEventListener("change", scheduleCalculation);
+      });
+
+      els.smokeValveCount.addEventListener("change", toggleConditionalFields);
+      els.compValveCount.addEventListener("change", toggleConditionalFields);
+      els.exportReportBtn.addEventListener("click", function () {
+        if (!state.calc) {
+          setStatus("Сначала дождитесь расчета.", "error");
+          return;
+        }
+        if (els.reportFormat.value === "pdf") exportPdf();
+        else exportDocx();
+      });
+
+      bindNumericFormatting();
+      bindCityAutocomplete();
+      applyDefaultValues();
+      toggleConditionalFields();
+      initClimate();
+      setStatus('Сначала заполните поле "Населенный пункт".', "");
+    })();
+  </script>
+</body>
+</html>
