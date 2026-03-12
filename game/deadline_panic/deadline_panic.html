@@ -1149,102 +1149,87 @@
     function drawIntro() {
       drawBackground();
 
-      const deskX = WIDTH / 2 - 150;
-      const deskY = HEIGHT - 136;
-      const gipStep = Math.sin(state.introFrame * 0.22) * 2;
-      const gipX = Math.min(WIDTH / 2 + 126, WIDTH + 148 - state.introFrame * 1.55);
-      const gipY = HEIGHT - 192 + gipStep;
+      const deskX = 146;
+      const deskY = 214;
+      const gipStep = Math.sin(state.introFrame * 0.22) * 3;
+      const gipX = Math.min(514, WIDTH + 154 - state.introFrame * 1.48);
+      const gipY = 172 + gipStep;
       const typingPulse = Math.floor(state.introFrame / 10) % 2;
       const monitorGlow = typingPulse ? "#c8f6ff" : "#98e4ff";
       const lampGlow = Math.floor(state.introFrame / 14) % 2 ? "#ffe7a6" : "#fff0be";
       const clockTick = Math.floor(state.introFrame / 24) % 12;
       const cursorBlink = Math.floor(state.introFrame / 7) % 2;
       const steamLift = Math.sin(state.introFrame * 0.08) * 2;
+      const introLines = state.introFrame > 330
+        ? ["ГИП: Надо все переделать.", "Сейчас проект полетит в аврал."]
+        : (state.introFrame > 220
+          ? ["ГИП подходит к столу проектировщика", "с новой пачкой правок."]
+          : ["Проектировщик сидит за компьютером,", "печатает и выпускает чертежи."]);
 
-      pixelRect(18, 60, WIDTH - 36, 208, "rgba(255,255,255,0.02)");
-      pixelRect(18, 60, WIDTH - 36, 10, "rgba(255,255,255,0.04)");
-      pixelRect(30, 72, WIDTH - 60, 174, "rgba(6,9,25,0.22)");
-      pixelRect(32, 246, WIDTH - 64, 6, "rgba(255,255,255,0.03)");
-      pixelRect(44, 84, 92, 90, "#222846");
-      pixelRect(50, 90, 80, 78, "#d8dded");
-      pixelRect(78, 110, 24, 4, "#68779d");
-      pixelRect(89, 104, 2, 30, "#68779d");
-      pixelRect(90 + (clockTick % 8), 132 - (clockTick > 5 ? 3 : 0), 2, 12, "#49597f");
-      pixelRect(154, 84, 126, 98, "#1b223d");
-      pixelRect(162, 92, 110, 82, "#283560");
-      pixelRect(172, 108, 88, 3, "#7ad7ff");
-      pixelRect(172, 120, 74, 3, "#7ad7ff");
-      pixelRect(172, 132, 78, 3, "#7ad7ff");
-      pixelRect(172, 144, 56, 3, "#7ad7ff");
-      pixelRect(498, 76, 144, 112, "#1c2342");
-      pixelRect(506, 84, 128, 96, "#31426f");
-      pixelRect(514, 92, 112, 80, "#0d1330");
-      for (let i = 0; i < 7; i += 1) {
-        const winX = 520 + i * 14;
-        pixelRect(winX, 96, 10, 72, "#15204a");
-        pixelRect(winX + 2, 144 - (i % 2) * 6, 6, 24 + (i % 3) * 8, "#24315d");
-        pixelRect(winX + 3, 156 - (i % 3) * 4, 4, 10 + (i % 2) * 8, "#ffe97c");
-      }
-      for (let i = 0; i < 6; i += 1) {
-        pixelRect(514, 98 + i * 12, 112, 2, "rgba(220,235,255,0.14)");
-      }
-      pixelRect(468, 88, 20, 90, "#284064");
-      pixelRect(472, 92, 12, 44, "#3c8c67");
-      pixelRect(470, 128, 16, 26, "#2d6c4d");
-      pixelRect(466, 154, 24, 14, "#694c38");
+      pixelRect(18, 58, WIDTH - 36, 266, "rgba(255,255,255,0.02)");
+      pixelRect(18, 58, WIDTH - 36, 10, "rgba(255,255,255,0.04)");
+      pixelRect(30, 72, WIDTH - 60, 238, "rgba(6,9,25,0.18)");
+      pixelRect(42, 82, 88, 84, "#222846");
+      pixelRect(48, 88, 76, 72, "#d8dded");
+      pixelRect(82, 104, 2, 28, "#68779d");
+      pixelRect(82, 104, 18, 2, "#68779d");
+      pixelRect(82 + (clockTick % 7), 126 - (clockTick > 4 ? 4 : 0), 2, 10, "#49597f");
+      pixelRect(154, 84, 120, 92, "#1b223d");
+      pixelRect(162, 92, 104, 76, "#2c3c69");
+      pixelRect(174, 108, 80, 3, "#7ad7ff");
+      pixelRect(174, 121, 66, 3, "#7ad7ff");
+      pixelRect(174, 134, 72, 3, "#7ad7ff");
+      pixelRect(174, 147, 54, 3, "#7ad7ff");
+      pixelRect(598, 90, 44, 94, "#26425f");
+      pixelRect(604, 96, 32, 40, "#3c8c67");
+      pixelRect(602, 130, 36, 28, "#2d6c4d");
+      pixelRect(596, 158, 48, 14, "#694c38");
+      pixelRect(492, 92, 86, 76, "#1c2342");
+      pixelRect(500, 100, 70, 60, "#32456d");
+      pixelRect(508, 108, 54, 44, "#4f638f");
+      pixelRect(516, 116, 38, 3, "#e6f0ff");
+      pixelRect(516, 128, 30, 2, "#e6f0ff");
+      pixelRect(516, 138, 34, 2, "#e6f0ff");
 
-      pixelRect(deskX - 12, deskY + 86, 332, 18, "rgba(0,0,0,0.16)");
-      pixelRect(deskX, deskY, 300, 18, "#5b3d2c");
-      pixelRect(deskX + 4, deskY + 3, 292, 4, "#8a5b41");
-      pixelRect(deskX + 6, deskY + 10, 288, 3, "#3a2519");
-      pixelRect(deskX + 22, deskY + 18, 12, 94, "#3f2b1e");
-      pixelRect(deskX + 264, deskY + 18, 12, 94, "#3f2b1e");
-      pixelRect(deskX + 126, deskY + 18, 12, 86, "#3f2b1e");
-      pixelRect(deskX + 20, deskY + 24, 84, 52, "#1b223d");
-      pixelRect(deskX + 26, deskY + 30, 72, 38, monitorGlow);
-      pixelRect(deskX + 32, deskY + 36, 58, 4, "#effcff");
-      pixelRect(deskX + 32, deskY + 46, 42, 2, "#5483ac");
-      pixelRect(deskX + 32, deskY + 54, 48, 2, "#5483ac");
-      pixelRect(deskX + 32, deskY + 60, 34, 2, "#5483ac");
-      pixelRect(deskX + 32, deskY + 65, 24 + typingPulse * 10, 2, "#ffffff");
-      pixelRect(deskX + 56 + typingPulse * 10, deskY + 65, 2, 2, "#1b223d");
-      pixelRect(deskX + 46, deskY + 76, 26, 6, "#505b79");
-      pixelRect(deskX + 41, deskY + 82, 36, 2, "#313a56");
-      pixelRect(deskX + 110, deskY + 30, 86, 16, "#d8dfea");
-      pixelRect(deskX + 116, deskY + 36, 74, 2, "#8d99b5");
-      pixelRect(deskX + 122, deskY + 50, 58, 4, "#d9d2b7");
-      pixelRect(deskX + 124, deskY + 56, 44, 2, "#ac8b5d");
-      pixelRect(deskX + 196, deskY + 34, 26, 30, "#2b3356");
-      pixelRect(deskX + 200, deskY + 38, 18, 20, "#11192f");
-      pixelRect(deskX + 232, deskY + 24, 18, 36, "#4b4b63");
-      pixelRect(deskX + 236, deskY + 28, 10, 26, lampGlow);
-      pixelRect(deskX + 246, deskY + 18, 20, 8, "#4b4b63");
-      pixelRect(deskX + 220, deskY + 58, 32, 4, "#4b4b63");
-      pixelRect(deskX + 250, deskY + 26, 30, 2, lampGlow);
-      pixelRect(deskX + 258, deskY + 28, 42, 26, "rgba(255, 240, 190, 0.14)");
-      pixelRect(deskX + 96, deskY + 74, 90, 12, "#c8d1e8");
-      pixelRect(deskX + 102, deskY + 78, 78, 2, "#7f8eb0");
-      pixelRect(deskX + 190, deskY + 72, 18, 22, "#c68642");
-      pixelRect(deskX + 204, deskY + 78, 8, 10, "#0c1125");
-      pixelRect(deskX + 214, deskY + 74, 32, 11, "#d9d2b7");
-      pixelRect(deskX + 218, deskY + 76, 24, 2, "#8d99b5");
-      pixelRect(deskX + 248, deskY + 72, 32, 14, "#d9d2b7");
-      pixelRect(deskX + 252, deskY + 76, 24, 2, "#8d99b5");
-      pixelRect(deskX + 150, deskY + 72, 24, 12, "#ffef8d");
-      pixelRect(deskX + 152, deskY + 74, 20, 8, "#fff4a8");
-      pixelRect(deskX + 154, deskY + 76, 8, 1, "#8d99b5");
-      pixelRect(deskX + 166 + steamLift, deskY + 60 - steamLift, 2, 8, "#fff3c4");
-      pixelRect(deskX + 171 - steamLift, deskY + 56 - steamLift, 2, 10, "#fff3c4");
-      pixelRect(deskX + 90, deskY + 98, 112, 5, "rgba(0,0,0,0.22)");
-      pixelRect(deskX + 166, deskY + 106, 42, 28, "#2a2040");
-      pixelRect(deskX + 174, deskY + 92, 26, 20, "#3e2b5f");
-      pixelRect(deskX + 172, deskY + 134, 6, 14, "#1f1224");
-      pixelRect(deskX + 196, deskY + 134, 6, 14, "#1f1224");
-      pixelRect(deskX + 76, deskY + 102, 56, 12, "rgba(0,0,0,0.12)");
-      pixelRect(deskX + 54, deskY + 62, 8 + cursorBlink * 8, 2, "#ffffff");
-      pixelRect(deskX + 64 + cursorBlink * 8, deskY + 62, 2, 2, "#0d1430");
+      pixelRect(deskX - 18, deskY + 104, 380, 18, "rgba(0,0,0,0.16)");
+      pixelRect(deskX, deskY, 336, 20, "#5b3d2c");
+      pixelRect(deskX + 4, deskY + 3, 328, 5, "#8a5b41");
+      pixelRect(deskX + 8, deskY + 12, 320, 3, "#3a2519");
+      pixelRect(deskX + 24, deskY + 20, 14, 108, "#3f2b1e");
+      pixelRect(deskX + 296, deskY + 20, 14, 108, "#3f2b1e");
+      pixelRect(deskX + 156, deskY + 20, 14, 98, "#3f2b1e");
+      pixelRect(deskX + 204, deskY + 18, 80, 66, "#1b223d");
+      pixelRect(deskX + 212, deskY + 26, 64, 42, monitorGlow);
+      pixelRect(deskX + 220, deskY + 34, 48, 4, "#effcff");
+      pixelRect(deskX + 220, deskY + 46, 40, 2, "#5483ac");
+      pixelRect(deskX + 220, deskY + 56, 44, 2, "#5483ac");
+      pixelRect(deskX + 220, deskY + 64, 26 + typingPulse * 12, 2, "#ffffff");
+      pixelRect(deskX + 222 + cursorBlink * 12, deskY + 64, 2, 2, "#1b223d");
+      pixelRect(deskX + 226, deskY + 84, 40, 8, "#505b79");
+      pixelRect(deskX + 222, deskY + 92, 48, 2, "#313a56");
+      pixelRect(deskX + 76, deskY + 26, 96, 18, "#d8dfea");
+      pixelRect(deskX + 84, deskY + 34, 80, 2, "#8d99b5");
+      pixelRect(deskX + 90, deskY + 50, 60, 5, "#d9d2b7");
+      pixelRect(deskX + 92, deskY + 58, 44, 2, "#ac8b5d");
+      pixelRect(deskX + 174, deskY + 32, 22, 28, "#2b3356");
+      pixelRect(deskX + 178, deskY + 36, 14, 18, "#11192f");
+      pixelRect(deskX + 286, deskY + 20, 18, 38, "#4b4b63");
+      pixelRect(deskX + 290, deskY + 26, 10, 28, lampGlow);
+      pixelRect(deskX + 300, deskY + 14, 18, 8, "#4b4b63");
+      pixelRect(deskX + 274, deskY + 58, 30, 4, "#4b4b63");
+      pixelRect(deskX + 304, deskY + 24, 32, 2, lampGlow);
+      pixelRect(deskX + 312, deskY + 26, 42, 30, "rgba(255, 240, 190, 0.14)");
+      pixelRect(deskX + 102, deskY + 82, 70, 12, "#d9d2b7");
+      pixelRect(deskX + 108, deskY + 86, 58, 2, "#8d99b5");
+      pixelRect(deskX + 180, deskY + 82, 18, 24, "#c68642");
+      pixelRect(deskX + 194, deskY + 88, 8, 10, "#0c1125");
+      pixelRect(deskX + 182 + steamLift, deskY + 70 - steamLift, 2, 9, "#fff3c4");
+      pixelRect(deskX + 188 - steamLift, deskY + 66 - steamLift, 2, 11, "#fff3c4");
+      pixelRect(deskX + 114, deskY + 98, 88, 10, "#c8d1e8");
+      pixelRect(deskX + 120, deskY + 102, 76, 2, "#7f8eb0");
+      pixelRect(deskX + 82, deskY + 112, 96, 5, "rgba(0,0,0,0.18)");
 
-      drawCinematicPerson(deskX + 104, deskY - 76, {
+      drawCinematicPerson(deskX + 52, deskY - 42, {
         hair: "#4d3325",
         hairShade: "#332118",
         skin: "#ffd5b8",
@@ -1267,11 +1252,12 @@
         typingPulse
       });
 
-      pixelRect(deskX + 108, deskY - 8, 52, 10, "rgba(0,0,0,0.12)");
-      pixelRect(deskX + 122, deskY - 28, 8, 22, "#30466d");
-      pixelRect(deskX + 122, deskY - 6, 30, 8, "#2d3f61");
+      pixelRect(deskX + 80, deskY + 66, 64, 10, "#30466d");
+      pixelRect(deskX + 88, deskY + 76, 14, 10, "#1c1c2a");
+      pixelRect(deskX + 120, deskY + 76, 14, 10, "#1c1c2a");
+      pixelRect(deskX + 84, deskY + 54, 68, 12, "rgba(0,0,0,0.10)");
 
-      drawCinematicPerson(gipX - 4, gipY - 10, {
+      drawCinematicPerson(gipX, gipY - 4, {
         hair: "#342229",
         hairShade: "#211319",
         skin: "#ffd4bc",
@@ -1294,11 +1280,15 @@
         briefcase: true
       });
 
-      pixelRect(gipX - 8, gipY + 92, 64, 8, "rgba(0,0,0,0.16)");
+      pixelRect(gipX + 2, gipY + 136, 88, 8, "rgba(0,0,0,0.16)");
 
       ctx.fillStyle = "#dff8ff";
-      ctx.font = "22px Courier New";
-      ctx.fillText("Проектировщик", deskX + 80, deskY - 64);
+      ctx.font = "20px Courier New";
+      ctx.fillText("Проектировщик", deskX + 34, deskY - 74);
+      ctx.fillStyle = "#9fd5ff";
+      ctx.font = "14px Courier New";
+      ctx.fillText("работает за компьютером", deskX + 18, deskY - 54);
+      pixelRect(deskX + 82, deskY - 50, 2, 18, "#9fd5ff");
 
       ctx.fillStyle = "#ffe97c";
       ctx.font = "18px Courier New";
@@ -1308,108 +1298,101 @@
       ctx.fillText("23:14  |  Revit открыт  |  7 писем без ответа", 18, 48);
 
       if (state.introFrame > 220) {
-        pixelRect(gipX - 18, gipY - 34, 82, 16, "rgba(10, 15, 35, 0.9)");
         ctx.fillStyle = "#ffffff";
-        ctx.font = "18px Courier New";
-        ctx.fillText("ГИП", gipX + 10, gipY - 21);
+        ctx.font = "20px Courier New";
+        ctx.fillText("ГИП", gipX + 10, gipY - 18);
+        ctx.fillStyle = "#ffb7c6";
+        ctx.font = "14px Courier New";
+        ctx.fillText("принес новые правки", gipX - 18, gipY);
+        pixelRect(gipX + 24, gipY + 6, 2, 26, "#ffb7c6");
       }
 
-      if (state.introFrame > 330) {
-        const bubbleW = 268;
-        const bubbleX = Math.max(24, gipX - 106);
-        const bubbleY = gipY - 104;
-        pixelRect(bubbleX, bubbleY, bubbleW, 40, "#fff4cf");
-        pixelRect(bubbleX + 3, bubbleY + 3, bubbleW - 6, 34, "#fff4cf");
-        pixelRect(bubbleX + 42, bubbleY + 40, 12, 8, "#fff4cf");
-        pixelRect(bubbleX + 54, bubbleY + 34, 8, 10, "#fff4cf");
-        ctx.strokeStyle = "#533b2a";
-        ctx.lineWidth = 2;
-        ctx.strokeRect(bubbleX, bubbleY, bubbleW, 40);
-        ctx.fillStyle = "#533b2a";
-        ctx.font = "22px Courier New";
-        ctx.fillText("Надо все переделать", bubbleX + 14, bubbleY + 25);
-        ctx.lineWidth = 1;
-      }
-
-      ctx.fillStyle = "#ffe97c";
-      ctx.font = "18px Courier New";
-      ctx.fillText(state.message, 18, 74);
-      ctx.fillStyle = "#bcd0ff";
-      ctx.font = "14px Courier New";
-      ctx.fillText("Сцена начнется автоматически", 18, 96);
+      pixelRect(18, HEIGHT - 164, WIDTH - 36, 138, "#fff8e8");
+      pixelRect(24, HEIGHT - 158, WIDTH - 48, 126, "#fff8e8");
+      ctx.strokeStyle = "#533b2a";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(18, HEIGHT - 164, WIDTH - 36, 138);
+      ctx.lineWidth = 1;
+      ctx.fillStyle = "#533b2a";
+      ctx.font = "16px Courier New";
+      ctx.fillText("СЦЕНА", 42, HEIGHT - 128);
+      ctx.fillText(introLines[0], 42, HEIGHT - 96);
+      ctx.fillText(introLines[1], 42, HEIGHT - 70);
+      ctx.fillStyle = "#364164";
+      ctx.fillText("После реплики ГИПа начнется игра", 42, HEIGHT - 42);
     }
 
     function drawCinematicPerson(x, y, palette, options = {}) {
       const pose = options.pose || "stand";
       const typingPulse = options.typingPulse || 0;
       const step = options.step || 0;
-      const legShift = step > 0 ? 2 : 0;
+      const legShift = step > 0 ? 4 : 0;
 
-      pixelRect(x + 6, y + 72, 40, 8, "rgba(0,0,0,0.12)");
+      pixelRect(x + 8, y + 106, 60, 10, "rgba(0,0,0,0.14)");
 
-      pixelRect(x + 14, y + 2, 24, 8, palette.hair);
-      pixelRect(x + 10, y + 8, 32, 10, palette.hair);
-      pixelRect(x + 12, y + 4, 20, 3, palette.hairShade || "#2a1c17");
-      pixelRect(x + 12, y + 18, 28, 22, palette.skin);
-      pixelRect(x + 9, y + 21, 3, 10, "#ebb59c");
-      pixelRect(x + 40, y + 21, 3, 10, "#ebb59c");
-      pixelRect(x + 16, y + 38, 20, 3, "#ddb099");
-      pixelRect(x + 20, y + 40, 12, 7, palette.neckwear);
-      pixelRect(x + 18, y + 46, 16, 4, palette.collar || "#f7f8ff");
-      pixelRect(x + 14, y + 50, 28, 24, palette.jacket);
-      pixelRect(x + 19, y + 50, 18, 16, palette.shirt);
-      pixelRect(x + 20, y + 50, 7, 5, palette.collar || "#f7f8ff");
-      pixelRect(x + 29, y + 50, 7, 5, palette.collar || "#f7f8ff");
-      pixelRect(x + 20, y + 56, 16, 8, palette.shirtShadow || "#c8d5ef");
-      pixelRect(x + 14, y + 50, 4, 24, palette.jacketShadow || "#22314a");
-      pixelRect(x + 38, y + 50, 4, 24, palette.jacketShadow || "#22314a");
-      pixelRect(x + 16, y + 52, 3, 16, "#ffffff33");
-      pixelRect(x + 37, y + 52, 3, 16, "#00000022");
-      pixelRect(x + 22, y + 63, 8, 10, palette.neckwear);
-      pixelRect(x + 30, y + 63, 3, 10, palette.belt || "#4d5879");
-      pixelRect(x + 18, y + 22, 4, 2, "#4c342c");
-      pixelRect(x + 30, y + 22, 4, 2, "#4c342c");
-      pixelRect(x + 19, y + 25, 3, 3, "#241817");
-      pixelRect(x + 30, y + 25, 3, 3, "#241817");
-      pixelRect(x + 25, y + 25, 2, 8, "#cc9076");
-      pixelRect(x + 23, y + 29, 8, 2, "#f0c1a8");
-      pixelRect(x + 22, y + 34, 10, 2, palette.lip || "#8b5a4a");
+      pixelRect(x + 22, y, 32, 10, palette.hair);
+      pixelRect(x + 16, y + 8, 44, 14, palette.hair);
+      pixelRect(x + 20, y + 4, 28, 4, palette.hairShade || "#2a1c17");
+      pixelRect(x + 20, y + 22, 36, 28, palette.skin);
+      pixelRect(x + 16, y + 28, 4, 12, "#ebb59c");
+      pixelRect(x + 56, y + 28, 4, 12, "#ebb59c");
+      pixelRect(x + 28, y + 48, 20, 4, "#ddb099");
+      pixelRect(x + 32, y + 52, 14, 10, palette.neckwear);
+      pixelRect(x + 28, y + 60, 22, 6, palette.collar || "#f7f8ff");
+      pixelRect(x + 18, y + 66, 40, 34, palette.jacket);
+      pixelRect(x + 26, y + 66, 24, 22, palette.shirt);
+      pixelRect(x + 28, y + 66, 9, 7, palette.collar || "#f7f8ff");
+      pixelRect(x + 39, y + 66, 9, 7, palette.collar || "#f7f8ff");
+      pixelRect(x + 28, y + 74, 20, 10, palette.shirtShadow || "#c8d5ef");
+      pixelRect(x + 18, y + 66, 5, 34, palette.jacketShadow || "#22314a");
+      pixelRect(x + 53, y + 66, 5, 34, palette.jacketShadow || "#22314a");
+      pixelRect(x + 22, y + 70, 4, 20, "#ffffff33");
+      pixelRect(x + 50, y + 70, 4, 20, "#00000022");
+      pixelRect(x + 34, y + 84, 10, 12, palette.neckwear);
+      pixelRect(x + 44, y + 84, 4, 12, palette.belt || "#4d5879");
+      pixelRect(x + 27, y + 28, 6, 3, "#4c342c");
+      pixelRect(x + 43, y + 28, 6, 3, "#4c342c");
+      pixelRect(x + 28, y + 33, 4, 4, "#241817");
+      pixelRect(x + 44, y + 33, 4, 4, "#241817");
+      pixelRect(x + 37, y + 33, 2, 10, "#cc9076");
+      pixelRect(x + 31, y + 40, 14, 3, "#f0c1a8");
+      pixelRect(x + 30, y + 46, 16, 3, palette.lip || "#8b5a4a");
       if (palette.glasses) {
-        pixelRect(x + 17, y + 24, 8, 6, "#1b2a42");
-        pixelRect(x + 28, y + 24, 8, 6, "#1b2a42");
-        pixelRect(x + 25, y + 26, 3, 2, "#1b2a42");
-        pixelRect(x + 18, y + 25, 6, 4, "#c7efff");
-        pixelRect(x + 29, y + 25, 6, 4, "#c7efff");
+        pixelRect(x + 25, y + 31, 10, 8, "#1b2a42");
+        pixelRect(x + 40, y + 31, 10, 8, "#1b2a42");
+        pixelRect(x + 35, y + 34, 5, 2, "#1b2a42");
+        pixelRect(x + 27, y + 33, 7, 5, "#c7efff");
+        pixelRect(x + 42, y + 33, 7, 5, "#c7efff");
       }
       if (palette.badge) {
-        pixelRect(x + 35, y + 59, 4, 7, palette.badge);
+        pixelRect(x + 49, y + 79, 5, 8, palette.badge);
       }
 
       if (pose === "seated") {
-        pixelRect(x + 10, y + 53, 7, 16, palette.sleeve);
-        pixelRect(x + 39, y + 53, 7, 16, palette.sleeve);
-        pixelRect(x + 8, y + 66 + typingPulse, 10, 5, palette.hand);
-        pixelRect(x + 39, y + 66 - typingPulse, 10, 5, palette.hand);
-        pixelRect(x + 18, y + 74, 12, 8, palette.pants);
-        pixelRect(x + 31, y + 74, 12, 8, palette.pants);
+        pixelRect(x + 12, y + 70, 8, 20, palette.sleeve);
+        pixelRect(x + 56, y + 70, 8, 20, palette.sleeve);
+        pixelRect(x + 10, y + 88 + typingPulse, 12, 6, palette.hand);
+        pixelRect(x + 56, y + 87 - typingPulse, 12, 6, palette.hand);
+        pixelRect(x + 26, y + 100, 16, 10, palette.pants);
+        pixelRect(x + 42, y + 100, 16, 10, palette.pants);
       } else {
-        pixelRect(x + 8, y + 52, 7, 22, palette.sleeve);
-        pixelRect(x + 41, y + 52, 7, 20, palette.sleeve);
-        pixelRect(x + 6, y + 68, 10, 6, palette.hand);
-        pixelRect(x + 40, y + 66, 10, 6, palette.hand);
-        pixelRect(x + 18, y + 74, 11, 18, palette.pants);
-        pixelRect(x + 29, y + 74, 11, 18, palette.pants);
-        pixelRect(x + 28, y + 74, 2, 18, "#00000033");
-        pixelRect(x + 17, y + 92, 11, 6, palette.shoes);
-        pixelRect(x + 30, y + 92, 11, 6, palette.shoes);
-        pixelRect(x + 18, y + 86 + legShift, 11, 4, "#00000018");
-        pixelRect(x + 29, y + 84 - legShift, 11, 4, "#00000018");
+        pixelRect(x + 10, y + 70, 8, 28, palette.sleeve);
+        pixelRect(x + 58, y + 70, 8, 26, palette.sleeve);
+        pixelRect(x + 8, y + 90, 12, 8, palette.hand);
+        pixelRect(x + 56, y + 88, 12, 8, palette.hand);
+        pixelRect(x + 28, y + 100, 14, 28, palette.pants);
+        pixelRect(x + 42, y + 100, 14, 28, palette.pants);
+        pixelRect(x + 41, y + 100, 3, 28, "#00000033");
+        pixelRect(x + 27, y + 128, 15, 8, palette.shoes);
+        pixelRect(x + 43, y + 128, 15, 8, palette.shoes);
+        pixelRect(x + 28, y + 118 + legShift, 14, 5, "#00000018");
+        pixelRect(x + 42, y + 114 - legShift, 14, 5, "#00000018");
       }
 
       if (options.briefcase) {
-        pixelRect(x + 43, y + 70, 16, 22, "#3b2a1e");
-        pixelRect(x + 45, y + 73, 12, 15, "#6d4c34");
-        pixelRect(x + 47, y + 76, 8, 2, "#d9d2b7");
+        pixelRect(x + 64, y + 86, 20, 28, "#3b2a1e");
+        pixelRect(x + 67, y + 90, 14, 18, "#6d4c34");
+        pixelRect(x + 70, y + 94, 8, 2, "#d9d2b7");
       }
     }
 
