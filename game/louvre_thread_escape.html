@@ -1,0 +1,1349 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Louvre Maze Escape</title>
+  <style>
+    :root {
+      --bg-top: #141726;
+      --bg-bottom: #0b0d16;
+      --panel: rgba(18, 22, 36, 0.94);
+      --panel-line: rgba(152, 172, 255, 0.22);
+      --ink: #eef3ff;
+      --muted: #b9c4eb;
+      --gold: #ffd56a;
+      --danger: #ff6666;
+      --good: #71e193;
+      --accent: #8ac7ff;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 18px;
+      color: var(--ink);
+      font-family: "Trebuchet MS", "Verdana", sans-serif;
+      background:
+        radial-gradient(circle at top, rgba(106, 134, 255, 0.18), transparent 22%),
+        linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
+    }
+
+    .shell {
+      width: min(1280px, 100%);
+      margin: 0 auto;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0)),
+        linear-gradient(180deg, #171b2d, #0c0f1c);
+      border-radius: 28px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: 0 30px 90px rgba(0, 0, 0, 0.42);
+    }
+
+    .hero {
+      padding: 24px 28px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0)),
+        linear-gradient(180deg, rgba(122, 149, 255, 0.12), rgba(0,0,0,0));
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(255, 213, 106, 0.12);
+      border: 1px solid rgba(255, 213, 106, 0.24);
+      color: #ffdd86;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 14px 0 10px;
+      font-size: clamp(34px, 5vw, 66px);
+      line-height: 0.95;
+      letter-spacing: -0.04em;
+      color: #f6f2dd;
+    }
+
+    .subtitle {
+      max-width: 920px;
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 16px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 860px) minmax(300px, 1fr);
+      gap: 18px;
+      padding: 18px;
+    }
+
+    .screen-card,
+    .panel {
+      border-radius: 24px;
+      background: var(--panel);
+      border: 1px solid var(--panel-line);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+
+    .screen-card {
+      padding: 14px;
+    }
+
+    .screen-wrap {
+      position: relative;
+      border-radius: 20px;
+      overflow: hidden;
+      border: 1px solid rgba(147, 169, 255, 0.22);
+      background: linear-gradient(180deg, #24304e, #0d1322);
+    }
+
+    .screen-wrap::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0)),
+        radial-gradient(circle at 20% 14%, rgba(255,255,255,0.12), transparent 16%);
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      aspect-ratio: 4 / 3;
+      cursor: crosshair;
+      background: #101522;
+    }
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .panel {
+      padding: 16px;
+    }
+
+    .panel h2 {
+      margin: 0 0 12px;
+      color: var(--gold);
+      font-size: 15px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .stats {
+      display: grid;
+      gap: 12px;
+    }
+
+    .stat-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--ink);
+      font-size: 14px;
+    }
+
+    .bar {
+      margin-top: 7px;
+      height: 18px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(255,255,255,0.06);
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.25);
+    }
+
+    .fill {
+      height: 100%;
+      width: 0;
+      transition: width 0.12s linear;
+    }
+
+    .fill.wrap {
+      background: linear-gradient(90deg, #aa1727, #ff6b66);
+    }
+
+    .fill.escape {
+      background: linear-gradient(90deg, #1f7b50, #74f2a0);
+    }
+
+    .list {
+      display: grid;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .list strong {
+      color: #fff1c0;
+    }
+
+    .status {
+      min-height: 126px;
+      padding: 14px;
+      border-radius: 18px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0)),
+        rgba(18, 24, 42, 0.92);
+      border: 1px solid rgba(147, 169, 255, 0.18);
+    }
+
+    .status strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 18px;
+      color: #fff0b2;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: 0;
+      min-height: 48px;
+      padding: 12px 18px;
+      border-radius: 999px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.16s ease;
+    }
+
+    button.primary {
+      background: linear-gradient(135deg, #f4d37b, #d4a449);
+      color: #171109;
+    }
+
+    button.secondary {
+      background: linear-gradient(135deg, #99e2af, #5ebf77);
+      color: #0d1d13;
+    }
+
+    button:active {
+      transform: translateY(2px);
+    }
+
+    .footer-note {
+      padding: 0 18px 18px;
+      color: #aab6e9;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    @media (max-width: 980px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <div class="eyebrow">Top-down chase game</div>
+      <h1>Louvre Maze Escape</h1>
+      <p class="subtitle">
+        Теперь это полноценная игра сверху в духе старых городских экшенов: в центре площадь Лувра с пирамидой,
+        вокруг неё лабиринты. Костик должен пробиться через поток браслетчиков, спасти Катю и вывести её с площади.
+      </p>
+    </header>
+
+    <section class="layout">
+      <section class="screen-card">
+        <div class="screen-wrap">
+          <canvas id="game" width="960" height="720" aria-label="Игра-лабиринт сверху"></canvas>
+        </div>
+      </section>
+
+      <aside class="sidebar">
+        <div class="panel">
+          <h2>Погоня</h2>
+          <div class="stats">
+            <div>
+              <div class="stat-line"><span>Намотка нитки</span><strong id="wrapValue">0%</strong></div>
+              <div class="bar"><div class="fill wrap" id="wrapBar"></div></div>
+            </div>
+            <div>
+              <div class="stat-line"><span>Прогресс миссии</span><strong id="escapeValue">0%</strong></div>
+              <div class="bar"><div class="fill escape" id="escapeBar"></div></div>
+            </div>
+            <div class="stat-line"><span>Сбитые враги</span><strong id="comboValue">0</strong></div>
+            <div class="stat-line"><span>Раунд</span><strong id="roundValue">1</strong></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>Управление</h2>
+          <div class="list">
+            <div><strong>WASD / стрелки</strong> ведут Костика по лабиринту.</div>
+            <div><strong>Пробел / клик</strong> это крик-выстрел по направлению движения.</div>
+            <div><strong>Цель</strong> найти Катю в центре, отбиться от врагов и уйти с ней к зелёному выходу.</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>Статус</h2>
+          <div class="status">
+            <strong id="statusTitle">Лувр открыт</strong>
+            <div id="statusText">
+              Запустите раунд. На карте несколько браслетчиков. Если они подойдут слишком близко и увидят Костика,
+              красная нитка начнёт быстро наматываться.
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>Действия</h2>
+          <div class="actions">
+            <button id="startBtn" class="primary">Start Run</button>
+            <button id="restartBtn" class="secondary">Reset</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>Новая механика</h2>
+          <div class="list">
+            <div>В центре карты площадь Лувра с пирамидой, там же ждёт Катя.</div>
+            <div>Крик Костика работает как короткий выстрел и временно убирает врага с карты.</div>
+            <div>Но новые противники постоянно респавнятся, поэтому стоять на месте бессмысленно.</div>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <div class="footer-note">
+      Один HTML-файл без ассетов. Весь лабиринт, площадь Лувра, герои, нить и анимации рисуются на canvas.
+    </div>
+  </main>
+
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+
+    const wrapBar = document.getElementById("wrapBar");
+    const escapeBar = document.getElementById("escapeBar");
+    const wrapValue = document.getElementById("wrapValue");
+    const escapeValue = document.getElementById("escapeValue");
+    const comboValue = document.getElementById("comboValue");
+    const roundValue = document.getElementById("roundValue");
+    const statusTitle = document.getElementById("statusTitle");
+    const statusText = document.getElementById("statusText");
+    const startBtn = document.getElementById("startBtn");
+    const restartBtn = document.getElementById("restartBtn");
+
+    const TILE = 48;
+    const COLS = 20;
+    const ROWS = 15;
+    const MAP = [
+      "####################",
+      "#P..#.....#....#..S#",
+      "#.#.#.###.#.##.#.###",
+      "#.#...#...#..#.#...#",
+      "#.###.#.###.##.#.#.#",
+      "#...#.#....K.....#.#",
+      "###.#.#.##....##.#.#",
+      "#...#...#......#...#",
+      "#.#####.#......#.###",
+      "#.....#.#......#...#",
+      "#.###.#.##....##.#.#",
+      "#.#...#......##...S#",
+      "#.#.###.######.#..E#",
+      "#S..#............#.#",
+      "####################"
+    ];
+
+    const PLAZA = { c1: 8, r1: 5, c2: 13, r2: 10 };
+    const PYRAMID_CENTER = { x: 10.5 * TILE, y: 7.5 * TILE };
+
+    const state = {
+      running: false,
+      ended: false,
+      wrap: 0,
+      progress: 0,
+      combo: 0,
+      round: 1,
+      lastTick: 0,
+      pulseText: "",
+      pulseTimer: 0,
+      flash: 0,
+      shake: 0,
+      winner: null,
+      rescuedKatya: false,
+      kills: 0,
+      shoutCooldown: 0,
+      threadsVisible: [],
+      shoutWave: null
+    };
+
+    const keys = new Set();
+    const sellers = [];
+    const sellerSpawns = [];
+    let audioCtx = null;
+    let audioMaster = null;
+    let musicTimer = 0;
+    let musicStep = 0;
+
+    const player = {
+      x: 0,
+      y: 0,
+      radius: 12,
+      speed: 176,
+      dash: 0,
+      facingX: 1,
+      facingY: 0
+    };
+
+    const katya = {
+      x: 0,
+      y: 0,
+      radius: 11,
+      following: false
+    };
+
+    const exitPoint = { x: 0, y: 0 };
+    const startPoint = { x: 0, y: 0 };
+    const katyaStart = { x: 0, y: 0 };
+    let initialToKatyaDistance = 1;
+    let katyaToExitDistance = 1;
+
+    function clamp(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function distance(ax, ay, bx, by) {
+      return Math.hypot(ax - bx, ay - by);
+    }
+
+    function setStatus(title, text) {
+      statusTitle.textContent = title;
+      statusText.textContent = text;
+    }
+
+    function setPulse(text) {
+      state.pulseText = text;
+      state.pulseTimer = 0.75;
+    }
+
+    function ensureAudio() {
+      if (!audioCtx) {
+        const Context = window.AudioContext || window.webkitAudioContext;
+        if (!Context) {
+          return null;
+        }
+        audioCtx = new Context();
+        audioMaster = audioCtx.createGain();
+        audioMaster.gain.value = 0.16;
+        audioMaster.connect(audioCtx.destination);
+      }
+
+      if (audioCtx.state === "suspended") {
+        audioCtx.resume();
+      }
+
+      return audioCtx;
+    }
+
+    function playTone(options) {
+      const ctx = ensureAudio();
+      if (!ctx || !audioMaster) {
+        return;
+      }
+
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+
+      osc.type = options.type || "triangle";
+      osc.frequency.setValueAtTime(options.freq, now);
+      if (options.freqEnd) {
+        osc.frequency.exponentialRampToValueAtTime(options.freqEnd, now + options.duration);
+      }
+
+      filter.type = options.filterType || "lowpass";
+      filter.frequency.setValueAtTime(options.filterFreq || 1200, now);
+
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(options.volume || 0.08, now + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + options.duration);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(audioMaster);
+
+      osc.start(now);
+      osc.stop(now + options.duration + 0.03);
+    }
+
+    function playMusicNote() {
+      if (!state.running || state.ended) {
+        return;
+      }
+
+      const lead = [392, 440, 523.25, 440, 392, 349.23, 329.63, 349.23];
+      const bass = [196, 196, 174.61, 174.61, 220, 220, 174.61, 174.61];
+      const leadFreq = lead[musicStep % lead.length];
+      const bassFreq = bass[musicStep % bass.length];
+
+      playTone({
+        freq: leadFreq,
+        duration: 0.26,
+        volume: 0.05,
+        type: "triangle",
+        filterFreq: 1700
+      });
+
+      playTone({
+        freq: bassFreq,
+        duration: 0.34,
+        volume: 0.028,
+        type: "sawtooth",
+        filterFreq: 520
+      });
+
+      musicStep += 1;
+    }
+
+    function playShoutSound() {
+      playTone({
+        freq: 640,
+        freqEnd: 240,
+        duration: 0.24,
+        volume: 0.11,
+        type: "square",
+        filterType: "bandpass",
+        filterFreq: 900
+      });
+
+      playTone({
+        freq: 880,
+        freqEnd: 330,
+        duration: 0.18,
+        volume: 0.045,
+        type: "triangle",
+        filterType: "highpass",
+        filterFreq: 700
+      });
+    }
+
+    function cellCenter(col, row) {
+      return {
+        x: col * TILE + TILE / 2,
+        y: row * TILE + TILE / 2
+      };
+    }
+
+    function parseMap() {
+      sellerSpawns.length = 0;
+
+      for (let row = 0; row < ROWS; row += 1) {
+        for (let col = 0; col < COLS; col += 1) {
+          const tile = MAP[row][col];
+          if (tile === "P") {
+            Object.assign(startPoint, cellCenter(col, row));
+          } else if (tile === "S") {
+            sellerSpawns.push(cellCenter(col, row));
+          } else if (tile === "E") {
+            Object.assign(exitPoint, cellCenter(col, row));
+          } else if (tile === "K") {
+            Object.assign(katya, cellCenter(col, row));
+            Object.assign(katyaStart, cellCenter(col, row));
+          }
+        }
+      }
+
+      initialToKatyaDistance = distance(startPoint.x, startPoint.y, katyaStart.x, katyaStart.y) || 1;
+      katyaToExitDistance = distance(katyaStart.x, katyaStart.y, exitPoint.x, exitPoint.y) || 1;
+    }
+
+    function isWallCell(col, row) {
+      if (col < 0 || row < 0 || col >= COLS || row >= ROWS) {
+        return true;
+      }
+      return MAP[row][col] === "#";
+    }
+
+    function isBlocked(x, y, radius) {
+      const minCol = Math.floor((x - radius) / TILE);
+      const maxCol = Math.floor((x + radius) / TILE);
+      const minRow = Math.floor((y - radius) / TILE);
+      const maxRow = Math.floor((y + radius) / TILE);
+
+      for (let row = minRow; row <= maxRow; row += 1) {
+        for (let col = minCol; col <= maxCol; col += 1) {
+          if (!isWallCell(col, row)) {
+            continue;
+          }
+          const left = col * TILE;
+          const top = row * TILE;
+          const nearestX = clamp(x, left, left + TILE);
+          const nearestY = clamp(y, top, top + TILE);
+          if (distance(x, y, nearestX, nearestY) < radius) {
+            return true;
+          }
+        }
+      }
+
+      return false;
+    }
+
+    function moveEntity(entity, dx, dy) {
+      const nextX = entity.x + dx;
+      if (!isBlocked(nextX, entity.y, entity.radius)) {
+        entity.x = nextX;
+      }
+
+      const nextY = entity.y + dy;
+      if (!isBlocked(entity.x, nextY, entity.radius)) {
+        entity.y = nextY;
+      }
+    }
+
+    function entityCell(entity) {
+      return {
+        col: Math.floor(entity.x / TILE),
+        row: Math.floor(entity.y / TILE)
+      };
+    }
+
+    function neighbors(col, row) {
+      return [
+        { col: col + 1, row },
+        { col: col - 1, row },
+        { col, row: row + 1 },
+        { col, row: row - 1 }
+      ].filter((cell) => !isWallCell(cell.col, cell.row));
+    }
+
+    function findPath(start, goal) {
+      const queue = [start];
+      const seen = new Set([start.col + "," + start.row]);
+      const parent = new Map();
+
+      while (queue.length) {
+        const current = queue.shift();
+        if (current.col === goal.col && current.row === goal.row) {
+          const path = [goal];
+          let key = goal.col + "," + goal.row;
+          while (parent.has(key)) {
+            const previous = parent.get(key);
+            path.push(previous);
+            key = previous.col + "," + previous.row;
+          }
+          return path.reverse();
+        }
+
+        for (const next of neighbors(current.col, current.row)) {
+          const key = next.col + "," + next.row;
+          if (seen.has(key)) {
+            continue;
+          }
+          seen.add(key);
+          parent.set(key, current);
+          queue.push(next);
+        }
+      }
+
+      return [];
+    }
+
+    function hasLineOfSight(ax, ay, bx, by) {
+      const steps = Math.ceil(distance(ax, ay, bx, by) / 10);
+      for (let i = 0; i <= steps; i += 1) {
+        const t = steps === 0 ? 0 : i / steps;
+        const x = ax + (bx - ax) * t;
+        const y = ay + (by - ay) * t;
+        if (isWallCell(Math.floor(x / TILE), Math.floor(y / TILE))) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    function createSeller(spawnIndex) {
+      const spawn = sellerSpawns[spawnIndex % sellerSpawns.length];
+      return {
+        x: spawn.x,
+        y: spawn.y,
+        radius: 12,
+        speed: 126 + (spawnIndex % 3) * 8,
+        path: [],
+        pathTimer: 0,
+        respawnTimer: 0,
+        alive: true,
+        spawnIndex
+      };
+    }
+
+    function seedSellers() {
+      sellers.length = 0;
+      for (let i = 0; i < sellerSpawns.length + 1; i += 1) {
+        sellers.push(createSeller(i));
+      }
+    }
+
+    function updateHud() {
+      wrapBar.style.width = state.wrap + "%";
+      escapeBar.style.width = state.progress + "%";
+      wrapValue.textContent = Math.round(state.wrap) + "%";
+      escapeValue.textContent = Math.round(state.progress) + "%";
+      comboValue.textContent = state.kills;
+      roundValue.textContent = state.round;
+    }
+
+    function resetPositions() {
+      player.x = startPoint.x;
+      player.y = startPoint.y;
+      player.dash = 0;
+      player.facingX = 1;
+      player.facingY = 0;
+      katya.x = katyaStart.x;
+      katya.y = katyaStart.y;
+      katya.following = false;
+      seedSellers();
+    }
+
+    function resetRound() {
+      state.running = false;
+      state.ended = false;
+      state.wrap = 0;
+      state.progress = 0;
+      state.combo = 0;
+      state.kills = 0;
+      state.lastTick = 0;
+      state.pulseText = "";
+      state.pulseTimer = 0;
+      state.flash = 0;
+      state.shake = 0;
+      state.winner = null;
+      state.rescuedKatya = false;
+      state.shoutCooldown = 0;
+      state.threadsVisible = [];
+      state.shoutWave = null;
+      musicTimer = 0;
+      musicStep = 0;
+      resetPositions();
+      setStatus(
+        "Лувр открыт",
+        "Прорвитесь к Кате в центре площади, кричите на врагов, если они перекрывают путь, и уводите её к зелёному выходу."
+      );
+      updateProgress();
+      updateHud();
+    }
+
+    function startRound() {
+      ensureAudio();
+      state.running = true;
+      state.ended = false;
+      state.wrap = 0;
+      state.kills = 0;
+      state.lastTick = 0;
+      state.pulseText = "";
+      state.pulseTimer = 0;
+      state.flash = 0;
+      state.shake = 0;
+      state.winner = null;
+      state.rescuedKatya = false;
+      state.shoutCooldown = 0;
+      state.threadsVisible = [];
+      state.shoutWave = null;
+      musicTimer = 0.05;
+      musicStep = 0;
+      resetPositions();
+      setStatus(
+        "Операция началась",
+        "Костик уже в лабиринте. Сначала добегите до Кати на площади Лувра, потом ведите её к выходу и отстреливайтесь криком."
+      );
+      setPulse("SAVE KATYA");
+      updateProgress();
+      updateHud();
+      requestAnimationFrame(loop);
+    }
+
+    function updateProgress() {
+      if (!state.rescuedKatya) {
+        const remaining = distance(player.x, player.y, katya.x, katya.y);
+        state.progress = clamp(50 * (1 - remaining / initialToKatyaDistance), 0, 50);
+      } else {
+        const remaining = distance(player.x, player.y, exitPoint.x, exitPoint.y);
+        state.progress = clamp(50 + 50 * (1 - remaining / katyaToExitDistance), 50, 100);
+      }
+    }
+
+    function playerInput(dt) {
+      let dx = 0;
+      let dy = 0;
+
+      if (keys.has("ArrowUp") || keys.has("KeyW")) dy -= 1;
+      if (keys.has("ArrowDown") || keys.has("KeyS")) dy += 1;
+      if (keys.has("ArrowLeft") || keys.has("KeyA")) dx -= 1;
+      if (keys.has("ArrowRight") || keys.has("KeyD")) dx += 1;
+
+      const magnitude = Math.hypot(dx, dy);
+      const speed = player.speed + player.dash;
+
+      if (magnitude > 0.1) {
+        player.facingX = dx / magnitude;
+        player.facingY = dy / magnitude;
+        moveEntity(player, (dx / magnitude) * speed * dt, (dy / magnitude) * speed * dt);
+      }
+
+      player.dash = Math.max(0, player.dash - 220 * dt);
+      state.combo = Math.max(0, state.combo - dt * 2.5);
+    }
+
+    function updateKatya(dt) {
+      if (!state.rescuedKatya && distance(player.x, player.y, katya.x, katya.y) < 24) {
+        state.rescuedKatya = true;
+        katya.following = true;
+        setPulse("KATYA!");
+        setStatus(
+          "Катя спасена",
+          "Теперь уводите Катю к выходу. Она держится за Костика и старается не отставать."
+        );
+      }
+
+      if (katya.following) {
+        const targetX = player.x - player.facingX * 24;
+        const targetY = player.y - player.facingY * 24;
+        const dx = targetX - katya.x;
+        const dy = targetY - katya.y;
+        const len = Math.hypot(dx, dy);
+        if (len > 2) {
+          moveEntity(katya, (dx / len) * 130 * dt, (dy / len) * 130 * dt);
+        }
+      }
+    }
+
+    function killSeller(seller) {
+      seller.alive = false;
+      seller.respawnTimer = 2.4 + Math.random() * 1.8;
+      seller.path = [];
+      state.kills += 1;
+      state.combo = clamp(state.combo + 2.2, 0, 99);
+      state.flash = Math.max(state.flash, 0.12);
+      setPulse("SHOUT!");
+    }
+
+    function shoutAttack() {
+      if (!state.running || state.ended || state.shoutCooldown > 0) {
+        return;
+      }
+
+      ensureAudio();
+      state.shoutCooldown = 0.42;
+      state.shoutWave = {
+        x: player.x,
+        y: player.y,
+        dx: player.facingX,
+        dy: player.facingY,
+        timer: 0.18
+      };
+      playShoutSound();
+
+      let hit = false;
+      for (const seller of sellers) {
+        if (!seller.alive) {
+          continue;
+        }
+        const toEnemyX = seller.x - player.x;
+        const toEnemyY = seller.y - player.y;
+        const dist = Math.hypot(toEnemyX, toEnemyY);
+        if (dist > 120) {
+          continue;
+        }
+        const dirX = toEnemyX / (dist || 1);
+        const dirY = toEnemyY / (dist || 1);
+        const dot = dirX * player.facingX + dirY * player.facingY;
+        if (dot > 0.55 && hasLineOfSight(player.x, player.y, seller.x, seller.y)) {
+          killSeller(seller);
+          hit = true;
+        }
+      }
+
+      if (!hit) {
+        setPulse("HEY!");
+      }
+    }
+
+    function updateSellers(dt) {
+      state.threadsVisible = [];
+
+      for (const seller of sellers) {
+        if (!seller.alive) {
+          seller.respawnTimer -= dt;
+          if (seller.respawnTimer <= 0) {
+            const spawn = sellerSpawns[seller.spawnIndex % sellerSpawns.length];
+            seller.x = spawn.x;
+            seller.y = spawn.y;
+            seller.alive = true;
+            seller.path = [];
+            seller.pathTimer = 0;
+          }
+          continue;
+        }
+
+        seller.pathTimer -= dt;
+        const sellerCell = entityCell(seller);
+        const targetEntity = state.rescuedKatya ? katya : player;
+        const targetCell = entityCell(targetEntity);
+
+        if (seller.pathTimer <= 0 || !seller.path.length) {
+          seller.path = findPath(sellerCell, targetCell);
+          seller.pathTimer = 0.24 + Math.random() * 0.08;
+        }
+
+        let target = { x: targetEntity.x, y: targetEntity.y };
+        if (seller.path.length > 1) {
+          target = cellCenter(seller.path[1].col, seller.path[1].row);
+        }
+
+        const angle = Math.atan2(target.y - seller.y, target.x - seller.x);
+        moveEntity(seller, Math.cos(angle) * seller.speed * dt, Math.sin(angle) * seller.speed * dt);
+
+        const targetX = state.rescuedKatya ? (player.x + katya.x) / 2 : player.x;
+        const targetY = state.rescuedKatya ? (player.y + katya.y) / 2 : player.y;
+        const dist = distance(targetX, targetY, seller.x, seller.y);
+        const visible = hasLineOfSight(seller.x, seller.y, targetX, targetY);
+
+        if (dist < 94 && visible) {
+          const pressure = 16 + (94 - dist) * 0.14;
+          state.wrap = clamp(state.wrap + pressure * dt, 0, 100);
+          state.flash = Math.max(state.flash, 0.08);
+          state.shake = Math.max(state.shake, 1.6);
+          state.threadsVisible.push({ seller, x: targetX, y: targetY });
+        }
+      }
+
+      if (!state.threadsVisible.length) {
+        state.wrap = clamp(state.wrap - 8 * dt, 0, 100);
+      }
+    }
+
+    function winRound() {
+      state.running = false;
+      state.ended = true;
+      state.winner = "kostik";
+      state.progress = 100;
+      setStatus(
+        "Костик и Катя ушли",
+        "Костик вытащил Катю с площади Лувра и вывел её через лабиринт, несмотря на бесконечный респавн браслетчиков."
+      );
+      setPulse("SAFE");
+      updateHud();
+    }
+
+    function loseRound() {
+      state.running = false;
+      state.ended = true;
+      state.winner = "seller";
+      state.wrap = 100;
+      setStatus(
+        "Нитка победила",
+        "Толпа браслетчиков зажала слишком близко. Красная нитка успела дойти до конца до спасения."
+      );
+      setPulse("TRAPPED");
+      updateHud();
+    }
+
+    function loop(ts) {
+      if (!state.running || state.ended) {
+        render();
+        return;
+      }
+
+      if (!state.lastTick) {
+        state.lastTick = ts;
+      }
+
+      const dt = Math.min((ts - state.lastTick) / 1000, 0.04);
+      state.lastTick = ts;
+
+      playerInput(dt);
+      updateKatya(dt);
+      updateSellers(dt);
+      updateProgress();
+
+      state.pulseTimer = Math.max(0, state.pulseTimer - dt);
+      state.flash = Math.max(0, state.flash - dt * 1.9);
+      state.shake = Math.max(0, state.shake - dt * 16);
+      state.shoutCooldown = Math.max(0, state.shoutCooldown - dt);
+      musicTimer -= dt;
+
+      if (musicTimer <= 0) {
+        playMusicNote();
+        musicTimer = 0.34;
+      }
+
+      if (state.shoutWave) {
+        state.shoutWave.timer -= dt;
+        if (state.shoutWave.timer <= 0) {
+          state.shoutWave = null;
+        }
+      }
+
+      if (state.rescuedKatya && distance(player.x, player.y, exitPoint.x, exitPoint.y) < 18 && distance(katya.x, katya.y, exitPoint.x, exitPoint.y) < 34) {
+        winRound();
+      } else if (state.wrap >= 100) {
+        loseRound();
+      }
+
+      updateHud();
+      render();
+
+      if (state.running && !state.ended) {
+        requestAnimationFrame(loop);
+      }
+    }
+
+    function drawCircle(x, y, r, fill, alpha = 1) {
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fillStyle = fill;
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawRoundedRect(x, y, w, h, r, fill, stroke) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      if (fill) {
+        ctx.fillStyle = fill;
+        ctx.fill();
+      }
+      if (stroke) {
+        ctx.strokeStyle = stroke;
+        ctx.stroke();
+      }
+    }
+
+    function drawFloorTile(col, row, tile) {
+      const x = col * TILE;
+      const y = row * TILE;
+      const isPlaza = col >= PLAZA.c1 && col <= PLAZA.c2 && row >= PLAZA.r1 && row <= PLAZA.r2;
+      const floor = isPlaza ? "#cdb48d" : "#7b6f7f";
+      const floorHi = isPlaza ? "#dfc7a3" : "#90839a";
+      const floorLo = isPlaza ? "#a88f67" : "#5e5566";
+
+      drawRoundedRect(x, y, TILE, TILE, 0, floor);
+      drawRoundedRect(x + 3, y + 3, TILE - 6, TILE - 6, 0, floorHi);
+      drawRoundedRect(x + 8, y + 8, TILE - 16, TILE - 16, 0, floor);
+
+      ctx.strokeStyle = floorLo;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x + TILE / 2, y + 6);
+      ctx.lineTo(x + TILE / 2, y + TILE - 6);
+      ctx.moveTo(x + 6, y + TILE / 2);
+      ctx.lineTo(x + TILE - 6, y + TILE / 2);
+      ctx.stroke();
+
+      if (tile === "E") {
+        drawRoundedRect(x + 8, y + 8, TILE - 16, TILE - 16, 12, "#2f8554");
+        drawRoundedRect(x + 14, y + 14, TILE - 28, TILE - 28, 10, "#81f2a4");
+      }
+
+      if (tile === "K" && !state.rescuedKatya) {
+        drawCircle(x + TILE / 2, y + TILE / 2 + 12, 14, "rgba(0,0,0,0.18)");
+      }
+    }
+
+    function drawWall(col, row) {
+      const x = col * TILE;
+      const y = row * TILE;
+      drawRoundedRect(x, y, TILE, TILE, 0, "#3a3f51");
+      drawRoundedRect(x + 4, y + 4, TILE - 8, TILE - 8, 6, "#545b74");
+      drawRoundedRect(x + 10, y + 10, TILE - 20, TILE - 20, 4, "#2a3040");
+      ctx.fillStyle = "rgba(0,0,0,0.12)";
+      ctx.fillRect(x + TILE - 6, y + 6, 6, TILE - 6);
+      ctx.fillRect(x + 6, y + TILE - 6, TILE - 6, 6);
+    }
+
+    function drawPyramid() {
+      const x = PYRAMID_CENTER.x;
+      const y = PYRAMID_CENTER.y;
+      ctx.beginPath();
+      ctx.moveTo(x, y - 62);
+      ctx.lineTo(x + 78, y + 32);
+      ctx.lineTo(x - 78, y + 32);
+      ctx.closePath();
+      ctx.fillStyle = "rgba(133, 207, 233, 0.58)";
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(x, y - 48);
+      ctx.lineTo(x + 58, y + 24);
+      ctx.lineTo(x - 58, y + 24);
+      ctx.closePath();
+      ctx.fillStyle = "rgba(194, 244, 255, 0.68)";
+      ctx.fill();
+      ctx.strokeStyle = "rgba(255,255,255,0.34)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x, y - 48);
+      ctx.lineTo(x - 58, y + 24);
+      ctx.lineTo(x + 58, y + 24);
+      ctx.closePath();
+      ctx.stroke();
+      drawCircle(x, y + 42, 88, "rgba(52, 35, 18, 0.14)");
+    }
+
+    function drawThreadPaths() {
+      for (const thread of state.threadsVisible) {
+        const seller = thread.seller;
+        const targetX = thread.x;
+        const targetY = thread.y;
+        const mx = (targetX + seller.x) / 2;
+        const my = (targetY + seller.y) / 2 - 18;
+        ctx.lineWidth = 7;
+        ctx.strokeStyle = "rgba(255, 123, 123, 0.34)";
+        ctx.beginPath();
+        ctx.moveTo(seller.x, seller.y);
+        ctx.quadraticCurveTo(mx, my, targetX, targetY);
+        ctx.stroke();
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = "#d62231";
+        ctx.beginPath();
+        ctx.moveTo(seller.x, seller.y);
+        ctx.quadraticCurveTo(mx, my, targetX, targetY);
+        ctx.stroke();
+      }
+    }
+
+    function drawShoutWave() {
+      if (!state.shoutWave) {
+        return;
+      }
+
+      const length = 80;
+      const spread = 18;
+      const x = state.shoutWave.x;
+      const y = state.shoutWave.y;
+      const dx = state.shoutWave.dx;
+      const dy = state.shoutWave.dy;
+      const px = -dy;
+      const py = dx;
+
+      ctx.save();
+      ctx.globalAlpha = state.shoutWave.timer / 0.18;
+      ctx.fillStyle = "rgba(255, 244, 171, 0.34)";
+      ctx.beginPath();
+      ctx.moveTo(x + px * 8, y + py * 8);
+      ctx.lineTo(x + dx * length + px * spread, y + dy * length + py * spread);
+      ctx.lineTo(x + dx * (length + 18), y + dy * (length + 18));
+      ctx.lineTo(x + dx * length - px * spread, y + dy * length - py * spread);
+      ctx.lineTo(x - px * 8, y - py * 8);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawPlayer() {
+      drawCircle(player.x + 2, player.y + 14, 18, "rgba(0,0,0,0.22)");
+      drawCircle(player.x, player.y, 17, "#d69757");
+      drawCircle(player.x, player.y - 6, 14, "#1b1b21");
+      drawCircle(player.x, player.y - 4, 10, "#31323a");
+      drawCircle(player.x, player.y + 4, 11, "#ddb392");
+      drawCircle(player.x - 4, player.y + 3, 1.9, "#24170f");
+      drawCircle(player.x + 4, player.y + 3, 1.9, "#24170f");
+      ctx.strokeStyle = "#694427";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(player.x - 4, player.y + 8);
+      ctx.lineTo(player.x + 4, player.y + 8);
+      ctx.stroke();
+      drawRoundedRect(player.x - 11, player.y + 11, 22, 18, 7, "#c98746");
+      drawRoundedRect(player.x - 10, player.y + 14, 20, 10, 6, "#dfaa6f");
+      drawRoundedRect(player.x - 8, player.y + 26, 6, 10, 3, "#5c4737");
+      drawRoundedRect(player.x + 2, player.y + 26, 6, 10, 3, "#5c4737");
+
+      ctx.strokeStyle = "rgba(255,242,182,0.8)";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(player.x, player.y - 2);
+      ctx.lineTo(player.x + player.facingX * 14, player.y + player.facingY * 14 - 2);
+      ctx.stroke();
+    }
+
+    function drawKatya() {
+      drawCircle(katya.x + 2, katya.y + 14, 16, "rgba(0,0,0,0.18)");
+      drawCircle(katya.x, katya.y, 16, "#e28f79");
+      drawCircle(katya.x, katya.y - 5, 11, "#6c372f");
+      drawCircle(katya.x, katya.y + 4, 10, "#efc5af");
+      drawRoundedRect(katya.x - 10, katya.y + 11, 20, 17, 7, "#cf5e74");
+      drawRoundedRect(katya.x - 8, katya.y + 13, 16, 10, 6, "#eb95a3");
+      drawRoundedRect(katya.x - 7, katya.y + 25, 5, 9, 3, "#604040");
+      drawRoundedRect(katya.x + 2, katya.y + 25, 5, 9, 3, "#604040");
+    }
+
+    function drawSeller(seller) {
+      if (!seller.alive) {
+        return;
+      }
+
+      drawCircle(seller.x + 2, seller.y + 14, 18, "rgba(0,0,0,0.22)");
+      drawCircle(seller.x, seller.y - 4, 11, "#221713");
+      drawCircle(seller.x, seller.y + 4, 12, "#99684b");
+      drawCircle(seller.x - 4, seller.y + 3, 1.8, "#180e0a");
+      drawCircle(seller.x + 4, seller.y + 3, 1.8, "#180e0a");
+      drawRoundedRect(seller.x - 11, seller.y + 12, 22, 18, 7, "#2d8c61");
+      drawRoundedRect(seller.x - 10, seller.y + 15, 20, 10, 6, "#4cb687");
+      drawRoundedRect(seller.x - 8, seller.y + 26, 6, 10, 3, "#324036");
+      drawRoundedRect(seller.x + 2, seller.y + 26, 6, 10, 3, "#324036");
+      drawCircle(seller.x + 13, seller.y + 18, 5, "#d52230");
+      drawCircle(seller.x + 13, seller.y + 18, 2, "#ff9da4");
+    }
+
+    function drawHUDOverlay() {
+      if (state.pulseTimer > 0 && state.pulseText) {
+        ctx.save();
+        ctx.globalAlpha = state.pulseTimer;
+        ctx.fillStyle = "#fff3c8";
+        ctx.font = "700 34px Trebuchet MS";
+        ctx.textAlign = "center";
+        ctx.fillText(state.pulseText, canvas.width / 2, 72 - (1 - state.pulseTimer) * 16);
+        ctx.restore();
+        ctx.textAlign = "left";
+      }
+    }
+
+    function render() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const shakeX = (Math.random() - 0.5) * state.shake;
+      const shakeY = (Math.random() - 0.5) * state.shake;
+      ctx.save();
+      ctx.translate(shakeX, shakeY);
+
+      const sky = ctx.createLinearGradient(0, 0, 0, 240);
+      sky.addColorStop(0, "#7f99d8");
+      sky.addColorStop(1, "#d8bc95");
+      ctx.fillStyle = sky;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      for (let row = 0; row < ROWS; row += 1) {
+        for (let col = 0; col < COLS; col += 1) {
+          const tile = MAP[row][col];
+          if (tile === "#") {
+            drawWall(col, row);
+          } else {
+            drawFloorTile(col, row, tile);
+          }
+        }
+      }
+
+      drawPyramid();
+      drawThreadPaths();
+      drawShoutWave();
+
+      if (!state.rescuedKatya) {
+        drawKatya();
+      } else {
+        drawKatya();
+      }
+
+      for (const seller of sellers) {
+        drawSeller(seller);
+      }
+      drawPlayer();
+      drawHUDOverlay();
+
+      if (!state.running && !state.ended) {
+        drawRoundedRect(220, 36, 520, 72, 20, "rgba(9,14,27,0.76)", "rgba(165,184,255,0.16)");
+        ctx.fillStyle = "#ffe393";
+        ctx.font = "700 30px Trebuchet MS";
+        ctx.textAlign = "center";
+        ctx.fillText("PRESS START TO SAVE KATYA", canvas.width / 2, 82);
+      }
+
+      if (state.ended) {
+        drawRoundedRect(
+          220,
+          34,
+          520,
+          76,
+          24,
+          state.winner === "kostik" ? "rgba(18, 88, 51, 0.82)" : "rgba(122, 22, 28, 0.82)",
+          "rgba(255,255,255,0.18)"
+        );
+        ctx.fillStyle = "#fff4dd";
+        ctx.font = "700 32px Trebuchet MS";
+        ctx.textAlign = "center";
+        ctx.fillText(state.winner === "kostik" ? "KOSTIK SAVED KATYA" : "THREAD SWARM WON", canvas.width / 2, 84);
+      }
+
+      if (state.flash > 0) {
+        ctx.save();
+        ctx.globalAlpha = state.flash;
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.restore();
+      }
+
+      ctx.restore();
+      ctx.textAlign = "left";
+    }
+
+    window.addEventListener("keydown", (event) => {
+      keys.add(event.code);
+      if (event.code === "Space") {
+        event.preventDefault();
+        shoutAttack();
+      }
+    });
+
+    window.addEventListener("keyup", (event) => {
+      keys.delete(event.code);
+    });
+
+    canvas.addEventListener("pointerdown", () => {
+      ensureAudio();
+      shoutAttack();
+    });
+
+    startBtn.addEventListener("click", () => {
+      ensureAudio();
+      state.round += state.ended ? 1 : 0;
+      startRound();
+    });
+
+    restartBtn.addEventListener("click", () => {
+      state.round = 1;
+      resetRound();
+      render();
+    });
+
+    parseMap();
+    resetRound();
+    render();
+  </script>
+</body>
+</html>
