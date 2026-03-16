@@ -1,0 +1,2059 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Расчет противодымной вентиляции ЛК без вестибюля через n8n</title>
+  <style>
+    #allrecords .smoke-app {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 26px;
+      font-family: "SF Pro Display", "Segoe UI", Arial, sans-serif;
+      color: #12233b;
+      background:
+        radial-gradient(120% 90% at 0% 0%, rgba(165, 219, 255, 0.28) 0%, rgba(165, 219, 255, 0) 55%),
+        radial-gradient(110% 100% at 100% 0%, rgba(190, 200, 255, 0.2) 0%, rgba(190, 200, 255, 0) 58%),
+        rgba(243, 247, 252, 0.54);
+      border: 1px solid rgba(255, 255, 255, 0.58);
+      border-radius: 24px;
+      box-shadow: 0 20px 60px rgba(21, 55, 98, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+      backdrop-filter: blur(20px) saturate(150%);
+      box-sizing: border-box;
+      position: relative;
+      top: 10px;
+      overflow: hidden;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    #allrecords .smoke-app::before {
+      content: "";
+      position: absolute;
+      inset: -120px -40px auto auto;
+      width: 340px;
+      height: 340px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0) 68%);
+      pointer-events: none;
+    }
+
+    #allrecords .app-header h2 {
+      margin: 0 0 8px;
+      font-size: 32px;
+      font-weight: 700;
+      color: #ad1c42;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+      text-wrap: balance;
+    }
+
+    #allrecords .app-header-meta {
+      margin: 0 0 16px;
+      color: #5e7596;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    #allrecords .app-header p,
+    #allrecords .caption {
+      margin: 0 0 16px;
+      color: #4b6488;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    #allrecords .panel {
+      position: relative;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0%, rgba(242, 249, 255, 0.58) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.78);
+      border-radius: 16px;
+      padding: 14px;
+      box-shadow: 0 10px 26px rgba(31, 67, 113, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.64);
+      backdrop-filter: blur(12px);
+      margin-bottom: 14px;
+    }
+
+    #allrecords .section-title {
+      margin: 0 0 12px;
+      color: #1f3f67;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    #allrecords .grid-2,
+    #allrecords .grid-3,
+    #allrecords .grid-4 {
+      display: grid;
+      gap: 12px;
+    }
+
+    #allrecords .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    #allrecords .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    #allrecords .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+    #allrecords .field-block {
+      display: grid;
+      grid-template-rows: minmax(46px, auto) 48px;
+      gap: 6px;
+      align-items: start;
+    }
+
+    #allrecords .field-block.field-block-hero {
+      grid-template-rows: minmax(32px, auto) 54px;
+    }
+
+    #allrecords .label {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1f3f67;
+      line-height: 1.35;
+      padding-top: 6px;
+    }
+
+    #allrecords .field-block-hero .label {
+      font-size: 15px;
+      padding-top: 0;
+    }
+
+    #allrecords .field,
+    #allrecords select.field {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid rgba(147, 176, 212, 0.54);
+      border-radius: 11px;
+      padding: 10px 11px;
+      background: rgba(255, 255, 255, 0.7);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+      min-height: 48px;
+      height: 48px;
+    }
+
+    #allrecords .field-block-hero .field {
+      min-height: 54px;
+      height: 54px;
+      font-size: 16px;
+      padding: 12px 14px;
+    }
+
+    #allrecords .field:focus,
+    #allrecords select.field:focus {
+      border-color: rgba(41, 126, 221, 0.9);
+      background: rgba(255, 255, 255, 0.86);
+      box-shadow: 0 0 0 3px rgba(50, 133, 227, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.74);
+    }
+
+    #allrecords .readonly {
+      color: #2f4667;
+      background: rgba(237, 245, 255, 0.72);
+      border-color: rgba(147, 176, 212, 0.45);
+    }
+
+    #allrecords .input-yellow {
+      background: #fff49a;
+      border-color: #d1be50;
+      font-weight: 700;
+      color: #2b2b2b;
+    }
+
+    #allrecords .city-field {
+      position: relative;
+    }
+
+    #allrecords .city-suggest {
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 0;
+      right: 0;
+      z-index: 60;
+      display: none;
+      max-height: 240px;
+      overflow-y: auto;
+      padding: 8px;
+      border-radius: 18px;
+      background: rgba(240, 245, 252, 0.62);
+      border: 1px solid rgba(255, 255, 255, 0.72);
+      box-shadow: 0 18px 36px rgba(23, 59, 97, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(24px) saturate(160%);
+      -webkit-backdrop-filter: blur(24px) saturate(160%);
+    }
+
+    #allrecords .city-suggest.is-open {
+      display: grid;
+      gap: 4px;
+    }
+
+    #allrecords .city-suggest-item {
+      width: 100%;
+      border: 0;
+      border-radius: 12px;
+      padding: 10px 12px;
+      text-align: left;
+      background: rgba(255, 255, 255, 0.28);
+      color: #183b61;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    #allrecords .city-suggest-item:hover,
+    #allrecords .city-suggest-item.is-active {
+      background: rgba(255, 255, 255, 0.76);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.86), 0 8px 16px rgba(34, 74, 118, 0.12);
+      transform: translateY(-1px);
+    }
+
+    #allrecords .input-guide {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 14px;
+      padding: 14px;
+      border-radius: 16px;
+      background: linear-gradient(180deg, rgba(17, 56, 96, 0.9) 0%, rgba(28, 82, 136, 0.82) 100%);
+      color: #f3f8ff;
+      box-shadow: 0 14px 28px rgba(17, 56, 96, 0.22);
+    }
+
+    #allrecords .input-guide-title {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    #allrecords .input-guide-text {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.45;
+      color: rgba(243, 248, 255, 0.86);
+    }
+
+    #allrecords .input-category {
+      padding: 14px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.42);
+      border: 1px solid rgba(255, 255, 255, 0.62);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    }
+
+    #allrecords .input-category + .input-category {
+      margin-top: 12px;
+    }
+
+    #allrecords .input-category-title {
+      margin: 0 0 12px;
+      color: #183b61;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    #allrecords .step-map {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    #allrecords .step-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.16);
+      color: #fff;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+    }
+
+    #allrecords .step-chip-num {
+      width: 22px;
+      height: 22px;
+      display: inline-grid;
+      place-items: center;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.22);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    #allrecords .input-step {
+      position: relative;
+      overflow: visible;
+      padding: 0;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.54);
+      border: 1px solid rgba(255, 255, 255, 0.72);
+      box-shadow: 0 12px 24px rgba(24, 59, 99, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.52);
+    }
+
+    #allrecords .input-step + .input-step {
+      margin-top: 8px;
+    }
+
+    #allrecords .input-step::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 5px;
+      background: var(--step-accent, #5a8fd8);
+    }
+
+    #allrecords .input-step > summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 14px 18px 14px 18px;
+    }
+
+    #allrecords .input-step > summary::-webkit-details-marker {
+      display: none;
+    }
+
+    #allrecords .input-step > summary:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    #allrecords .step-head {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 12px;
+      align-items: center;
+    }
+
+    #allrecords .step-badge {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border-radius: 12px;
+      background: color-mix(in srgb, var(--step-accent, #5a8fd8) 18%, white);
+      color: #173b63;
+      font-weight: 800;
+      font-size: 14px;
+    }
+
+    #allrecords .step-title-wrap {
+      display: grid;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    #allrecords .step-title {
+      margin: 0;
+      color: #183b61;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    #allrecords .step-hint {
+      margin: 0;
+      color: #5b7394;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    #allrecords .step-toggle {
+      color: #56749b;
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    #allrecords .input-step[open] .step-toggle::after {
+      content: "Свернуть";
+    }
+
+    #allrecords .input-step:not([open]) .step-toggle::after {
+      content: "Развернуть";
+    }
+
+    #allrecords .step-body {
+      position: relative;
+      z-index: 2;
+      padding: 0 18px 18px 18px;
+      border-top: 1px solid rgba(129, 159, 194, 0.18);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.42) 0%, rgba(245, 249, 255, 0.74) 100%);
+    }
+
+    #allrecords .step-a { --step-accent: #4d8ee1; }
+    #allrecords .step-b { --step-accent: #56a59a; }
+    #allrecords .step-c { --step-accent: #ca8b42; }
+    #allrecords .step-d { --step-accent: #c95c74; }
+
+    #allrecords .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    #allrecords .metric-card {
+      display: grid;
+      grid-template-rows: minmax(28px, auto) auto;
+      align-items: start;
+      border-radius: 14px;
+      padding: 10px 12px;
+      background: linear-gradient(180deg, rgba(226, 247, 234, 0.95) 0%, rgba(213, 241, 223, 0.9) 100%);
+      border: 1px solid rgba(109, 176, 130, 0.55);
+      min-height: 74px;
+    }
+
+    #allrecords .metric-card.metric-blue {
+      background: linear-gradient(180deg, rgba(229, 240, 255, 0.95) 0%, rgba(217, 234, 255, 0.92) 100%);
+      border-color: rgba(83, 129, 199, 0.45);
+    }
+
+    #allrecords .metric-label {
+      display: block;
+      font-size: 13px;
+      color: #335273;
+      margin-bottom: 0;
+    }
+
+    #allrecords .metric-value {
+      display: block;
+      font-size: 22px;
+      font-weight: 800;
+      color: #0f4a24;
+      align-self: end;
+    }
+
+    #allrecords .metric-blue .metric-value {
+      color: #184f90;
+    }
+
+    #allrecords .table-wrap {
+      overflow-x: auto;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.4);
+    }
+
+    #allrecords table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      min-width: 620px;
+    }
+
+    #allrecords th,
+    #allrecords td {
+      border-bottom: 1px solid rgba(120, 145, 177, 0.24);
+      padding: 8px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    #allrecords th {
+      background: rgba(225, 233, 245, 0.68);
+      color: #16385f;
+      font-weight: 700;
+      position: sticky;
+      top: 0;
+    }
+
+    #allrecords td.num,
+    #allrecords th.num {
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    #allrecords .actions {
+      display: grid;
+      grid-template-columns: 220px 220px 1fr;
+      gap: 10px;
+      align-items: center;
+    }
+
+    #allrecords .btn-soft {
+      border: 1px solid rgba(118, 144, 178, 0.45);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.66);
+      color: #1f3f67;
+      padding: 10px 14px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    #allrecords .btn-soft:hover {
+      background: rgba(255, 255, 255, 0.86);
+    }
+
+    #allrecords .btn-export {
+      border-color: rgba(255, 255, 255, 0.7);
+      background: linear-gradient(180deg, #4fa8ff 0%, #1b79db 100%);
+      color: #fff;
+      box-shadow: 0 10px 20px rgba(24, 97, 180, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    #allrecords .btn-export:hover {
+      transform: translateY(-1px);
+      background: linear-gradient(180deg, #4fa8ff 0%, #1b79db 100%);
+      color: #fff;
+      box-shadow: 0 14px 24px rgba(24, 97, 180, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    }
+
+    #allrecords .status-line {
+      min-height: 20px;
+      font-size: 13px;
+      color: #587096;
+    }
+
+    #allrecords .status-loading {
+      color: #1b79db;
+      font-weight: 600;
+    }
+
+    #allrecords .status-error {
+      color: #a22145;
+      font-weight: 700;
+    }
+
+    #allrecords .report-root {
+      width: 960px;
+      background: #fff;
+      color: #111;
+      padding: 28px 32px;
+      font-family: Cambria, "Times New Roman", serif;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+
+    #allrecords .report-root h1,
+    #allrecords .report-root h2 {
+      margin: 0 0 10px;
+      color: #111;
+    }
+
+    #allrecords .report-root h1 {
+      font-size: 24px;
+      text-align: center;
+    }
+
+    #allrecords .report-root h2 {
+      font-size: 19px;
+      margin-top: 16px;
+      margin-bottom: 6px;
+    }
+
+    #allrecords .report-root table {
+      min-width: 0;
+      font-size: 14px;
+      margin-top: 0;
+      margin-bottom: 16px;
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    #allrecords .report-method {
+      margin: -2px 0 18px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    #allrecords .report-method-title {
+      margin: 0 0 8px;
+      font-weight: 700;
+    }
+
+    #allrecords .report-method-item {
+      margin: 0 0 14px;
+    }
+
+    #allrecords .report-method-name {
+      margin: 0 0 6px;
+      font-weight: 700;
+    }
+
+    #allrecords .report-method-formula {
+      margin: 0 0 8px;
+      text-align: center;
+      font-weight: 700;
+    }
+
+    #allrecords .report-method-line {
+      margin: 0 0 4px;
+    }
+
+    #allrecords .report-root th,
+    #allrecords .report-root td {
+      border: 1px solid #7b8794;
+      padding: 7px 9px;
+      position: static;
+    }
+
+    #allrecords .report-root th {
+      background: #eeeeee;
+      font-weight: 700;
+    }
+
+    @media (max-width: 960px) {
+      #allrecords .grid-4,
+      #allrecords .grid-3,
+      #allrecords .summary-grid,
+      #allrecords .actions {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      #allrecords .step-head {
+        grid-template-columns: auto 1fr;
+      }
+
+      #allrecords .step-toggle {
+        grid-column: 1 / -1;
+        padding-left: 46px;
+      }
+    }
+
+    @media (max-width: 780px) {
+      #allrecords .smoke-app {
+        padding: 18px;
+        border-radius: 18px;
+      }
+
+      #allrecords .app-header h2 {
+        font-size: 24px;
+      }
+
+      #allrecords .grid-2,
+      #allrecords .grid-3,
+      #allrecords .grid-4,
+      #allrecords .summary-grid,
+      #allrecords .actions {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="allrecords">
+    <div class="smoke-app">
+      <div class="app-header">
+        <h2>Расчет противодымной вентиляции лестничной клетки</h2>
+        <p class="app-header-meta">Лестничная клетка с выходом наружу без вестибюля, методика ВНИИПО</p>
+      </div>
+
+      <div class="panel">
+        <h3 class="section-title">Исходные данные</h3>
+        <div class="input-guide">
+          <h4 class="input-guide-title">Заполняйте модуль по шагам</h4>
+          <p class="input-guide-text">Ввод выполняется в желтые поля. Температура холодного периода и скорость ветра заполняются автоматически по выбранному городу согласно СП131.13330.2025.</p>
+          <div class="step-map">
+            <a class="step-chip" href="#step-a"><span class="step-chip-num">1</span><span>Климат и объект</span></a>
+            <a class="step-chip" href="#step-b"><span class="step-chip-num">2</span><span>Геометрия</span></a>
+            <a class="step-chip" href="#step-c"><span class="step-chip-num">3</span><span>Двери</span></a>
+            <a class="step-chip" href="#step-d"><span class="step-chip-num">4</span><span>Оборудование</span></a>
+          </div>
+        </div>
+
+        <details class="input-step step-a" id="step-a" open>
+          <summary>
+            <div class="step-head">
+              <div class="step-badge">1</div>
+              <div class="step-title-wrap">
+                <h4 class="step-title">Климатические данные и название объекта</h4>
+                <p class="step-hint">Выберите город, проверьте климатические параметры и заполните название объекта.</p>
+              </div>
+              <div class="step-toggle"></div>
+            </div>
+          </summary>
+          <div class="step-body">
+            <div class="grid-2">
+              <div class="field-block field-block-hero" style="grid-column: 1 / -1;">
+                <label class="label" for="objectName">Название объекта</label>
+                <input class="field input-yellow" id="objectName" type="text" placeholder="Введите название объекта" />
+              </div>
+            </div>
+            <div class="grid-4" style="margin-top: 12px;">
+              <div class="field-block city-field">
+                <label class="label" for="city">Населенный пункт</label>
+                <input class="field input-yellow" id="city" type="text" autocomplete="off" placeholder="Введите наименование населенного пункта" />
+                <div class="city-suggest" id="citySuggest"></div>
+              </div>
+              <div class="field-block">
+                <label class="label" for="coldTemp">Температура наружного воздуха в холодный период, °С</label>
+                <input class="field readonly" id="coldTemp" type="text" readonly />
+              </div>
+              <div class="field-block">
+                <label class="label" for="windSpeed">Скорость ветра, м/с</label>
+                <input class="field readonly" id="windSpeed" type="text" readonly />
+              </div>
+              <div class="field-block">
+                <label class="label" for="indoorTemp">Температура внутри здания, °С</label>
+                <input class="field input-yellow" id="indoorTemp" type="text" value="18" inputmode="decimal" />
+              </div>
+            </div>
+            <p class="caption" id="climateStatus"></p>
+          </div>
+        </details>
+
+        <details class="input-step step-b" id="step-b">
+          <summary>
+            <div class="step-head">
+              <div class="step-badge">2</div>
+              <div class="step-title-wrap">
+                <h4 class="step-title">Геометрические данные здания</h4>
+                <p class="step-hint">Основные размеры здания, этажность и параметры лестничной клетки.</p>
+              </div>
+              <div class="step-toggle"></div>
+            </div>
+          </summary>
+          <div class="step-body">
+            <div class="grid-4">
+              <div class="field-block">
+                <label class="label" for="floors">Количество этажей здания</label>
+                <input class="field input-yellow" id="floors" type="text" value="20" inputmode="numeric" />
+              </div>
+              <div class="field-block">
+                <label class="label" for="floorHeight">Высота этажа, м</label>
+                <input class="field input-yellow" id="floorHeight" type="text" value="3,15" inputmode="decimal" />
+              </div>
+              <div class="field-block">
+                <label class="label" for="buildingType">Вид здания</label>
+                <select class="field input-yellow" id="buildingType">
+                  <option selected>Жилое</option>
+                  <option>Общественное</option>
+                </select>
+              </div>
+              <div class="field-block">
+                <label class="label" for="facadeHeight">Высота фасада, м</label>
+                <input class="field input-yellow" id="facadeHeight" type="text" value="63" inputmode="decimal" />
+              </div>
+              <div class="field-block">
+                <label class="label" for="facadeLength">Длина фасада, м</label>
+                <input class="field input-yellow" id="facadeLength" type="text" value="52" inputmode="decimal" />
+              </div>
+              <div class="field-block">
+                <label class="label" for="sideFacadeLength">Длина бокового фасада, м</label>
+                <input class="field input-yellow" id="sideFacadeLength" type="text" value="15,5" inputmode="decimal" />
+              </div>
+              <div class="field-block">
+                <label class="label" for="windowArea">Площадь окна ЛК на одном этаже, м²</label>
+                <input class="field input-yellow" id="windowArea" type="text" value="4,7" inputmode="decimal" />
+              </div>
+              <div class="field-block">
+                <label class="label" for="stairArea">Площадь лестничной клетки, м²</label>
+                <input class="field input-yellow" id="stairArea" type="text" value="15,2" inputmode="decimal" />
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <details class="input-step step-c" id="step-c">
+          <summary>
+            <div class="step-head">
+              <div class="step-badge">3</div>
+              <div class="step-title-wrap">
+                <h4 class="step-title">Параметры дверей наружных и на этаже</h4>
+                <p class="step-hint">Заполните площади и высоты дверей, а также тип двери и вид тамбура.</p>
+              </div>
+              <div class="step-toggle"></div>
+            </div>
+          </summary>
+          <div class="step-body">
+            <div class="grid-4">
+              <div class="field-block">
+                <label class="label" for="stairsToCorridorCount">Количество ЛК, выходящих в коридор</label>
+                <input class="field input-yellow" id="stairsToCorridorCount" type="text" value="1" inputmode="numeric" />
+              </div>
+              <div class="field-block">
+                <label class="label" for="consecutiveDoors">Количество последовательно расположенных наружных дверей</label>
+                <input class="field input-yellow" id="consecutiveDoors" type="text" value="1" inputmode="numeric" />
+              </div>
+              <div class="field-block">
+                <label class="label" for="doorType">Вид двери выходящей в коридор</label>
+                <select class="field input-yellow" id="doorType">
+                  <option>Обычная</option>
+                  <option selected>Дымогазонепроницаемая</option>
+                </select>
+              </div>
+              <div class="field-block">
+                <label class="label" for="tambourType">Вид/наличие тамбура на выходе из ЛК наружу</label>
+                <select class="field input-yellow" id="tambourType">
+                  <option selected>нет</option>
+                  <option>прямоугольный</option>
+                  <option>z-образный</option>
+                </select>
+              </div>
+              <div class="field-block">
+                <label class="label" for="secondFloorDoorHeight">Высота двери на выходе из коридора в ЛК, м</label>
+                <input class="field input-yellow" id="secondFloorDoorHeight" type="text" value="2,7" inputmode="decimal" />
+              </div>
+              <div class="field-block">
+                <label class="label" for="stairDoorArea">Площадь двери на выходе из коридора в ЛК, м²</label>
+                <input class="field input-yellow" id="stairDoorArea" type="text" value="2,11" inputmode="decimal" />
+              </div>
+              <div class="field-block">
+                <label class="label" for="outerDoorHeight">Высота наружной двери, м</label>
+                <input class="field input-yellow" id="outerDoorHeight" type="text" value="2,7" inputmode="decimal" />
+              </div>
+              <div class="field-block">
+                <label class="label" for="outerDoorArea">Площадь наружной двери, м²</label>
+                <input class="field input-yellow" id="outerDoorArea" type="text" value="3,24" inputmode="decimal" />
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <details class="input-step step-d" id="step-d">
+          <summary>
+            <div class="step-head">
+              <div class="step-badge">4</div>
+              <div class="step-title-wrap">
+                <h4 class="step-title">Параметры оборудования</h4>
+                <p class="step-hint">Высота установки вентилятора и потери в его обвязке.</p>
+              </div>
+              <div class="step-toggle"></div>
+            </div>
+          </summary>
+          <div class="step-body">
+            <div class="grid-2">
+              <div class="field-block">
+                <label class="label" for="fanInstallHeight">Высота установки вентилятора, м</label>
+                <input class="field input-yellow" id="fanInstallHeight" type="text" value="65" inputmode="decimal" />
+              </div>
+              <div class="field-block">
+                <label class="label" for="networkLoss">Потери в обвязке вентилятора, Па</label>
+                <input class="field input-yellow" id="networkLoss" type="text" value="200" inputmode="decimal" />
+              </div>
+            </div>
+          </div>
+        </details>
+      </div>
+
+      <div class="panel">
+        <h3 class="section-title">Результат расчета</h3>
+        <div class="summary-grid" id="summaryGrid"></div>
+      </div>
+
+      <div class="panel">
+        <h3 class="section-title">Выгрузка отчета</h3>
+        <div class="actions">
+          <select class="field input-yellow" id="reportFormat">
+            <option value="docx">DOCX</option>
+            <option value="pdf">PDF</option>
+          </select>
+          <button class="btn-soft btn-export" id="exportReportBtn" type="button">Выгрузить отчет</button>
+          <div class="status-line" id="calcStatus"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var CITY_DATA = [["Абакан",-37,4.8,28],["Агата",-53,2.9,21],["Агзу",-28,2.3,27],["Агинское",-34,3.7,27],["Ай-Петри",-16,0,23],["Акша",-34,4.5,27],["Алдан",-41,2.3,25],["Алейск",-35,5.9,29],["Александров Гай",-26,4.8,33],["Александровск- Сахалинский",-26,6.8,21],["Александровский Завод",-37,2.4,25],["Александровское",-42,3.5,25],["Алыгджер",-34,4.7,24],["Амга",-54,2.1,27],["Анадырь",-39,6.3,18],["Анучино",-29,2.4,29],["Апука",-28,7.8,14],["Арзамас",-29,4.7,26],["Арзгир",-20,4.3,33],["Архангельск",-34,3.6,24],["Архара",-36,2.5,27],["Аскания-Нова",-16,0,31],["Астраханка",-25,3.4,27],["Астрахань",-20,3.8,33],["Ачинск",-36,4.7,26],["Аян",-28,3,18],["Бабаево",-30,3.1,25],["Бабушкин",-29,5.7,20],["Багдарин",-42,2.2,24],["Байдуков",-30,7.6,20],["Байкальск",-27,1.4,23],["Байкит",-50,2.1,25],["Балашов",-25,4.6,29],["Барабинск",-38,4.2,27],["Баргузин",-41,3.2,26],["Барнаул",-36,3.9,28],["Батамай",-53,2.9,24],["Бежецк",-30,4.4,24],["Белгород",-24,4.7,28],["Белогорск",-36,2.7,28],["Белорецк",-31,5.1,26],["Бердигястях",-54,1.7,26],["Березово",-42,3.8,20],["Березово",-50,7.1,23],["Бийск",-37,4.9,28],["Бикин",-30,2.1,28],["Биробиджан",-31,2.6,28],["Бисер",-35,3.8,24],["Благовещенск",-33,2.6,28],["Богополь",-20,6.1,27],["Боготол",-37,3.7,25],["Богучаны",-45,3.1,27],["Бодайбо",-47,2.3,27],["Болотное",-38,3.8,27],["Большерецк",-27,5.5,16],["Бомнак",-42,2.2,26],["Борзя",-38,2.4,27],["Боровичи",-29,2.6,25],["Братолюбовка",-37,2,27],["Братск",-39,2.5,24],["Брохово",-35,6.9,17],["Брянск",-23,3.5,26],["Бугульма",-29,6.5,26],["Буяга",-52,2.6,27],["Бысса",-40,2.1,27],["Вайда-Губа",-16,9.2,17],["Ванавара",-51,2.1,27],["Варандей",-36,9.3,16],["Великие Луки",-25,4.1,26],["Великий Новгород",-27,5,25],["Вельмо",-48,4,26],["Вендинга",-39,3,25],["Верхнеимбатск",-47,3.1,25],["Верхне-Марково",-48,3.7,27],["Верхнеуральск",-35,3.6,27],["Верхний Баскунчак",-23,3.9,34],["Верхняя Гутара",-35,2.1,24],["Верхотурье",-36,3,26],["Верхоянск",-58,1.4,27],["Вилюйск",-52,1.8,27],["Витим",-50,3.7,26],["Владивосток",-22,7.1,23],["Владикавказ",-14,1.9,28],["Владимир",-27,4.1,25],["Волгоград",-22,5.5,32],["Вологда",-32,3.9,25],["Волочанка",-50,6.7,20],["Воркута",-41,8.2,21],["Воронеж",-24,4,29],["Выборг",-26,6,24],["Выкса",-28,4.5,27],["Вытегра",-32,3.5,25],["Вяземский",-29,2.9,28],["Вязьма",-25,4.5,24],["Гвасюги",-33,2.2,28],["Геническ",-15,5.8,29],["Гигант",-19,5.2,32],["Глазов",-34,5.1,26],["Грозный",-17,3.4,32],["Дальнереченск",-28,2.9,27],["Дарасун",-34,3.1,27],["Дебальцево",-22,4.5,29],["Демьянское",-40,2.8,26],["Дербент",-7,3.2,30],["Джалинда",-56,2.5,23],["Джаорэ",-30,5.9,20],["Джарджан",-54,5,23],["Джикимда",-51,1.7,28],["Диксон",-40,9,11],["Дмитров",-26,4.7,25],["Долинск",-23,3.4,24],["Донецк",-19,5.4,30],["Дуван",-33,3.6,26],["Дудинка",-47,6.7,21],["Екатеринбург",-32,4,26],["Екатерино- Никольское",-29,4.5,28],["Елабуга",-31,4.1,27],["Емецк",-32,4.8,25],["Енисейск",-44,3.1,26],["Ербогачен",-52,2.1,26],["Ерофей Павлович",-37,2.3,26],["Ершово",-41,2.8,26],["Жигалово",-44,2.4,27],["Жиганск",-52,4.1,24],["Завитинск",-34,2.1,27],["Запорожье",-18,0,31],["Земетчино",-28,4.5,29],["Зея",-42,3.5,27],["Зима",-38,2.6,27],["Змеиногорск",-37,5.2,28],["Зырянка",-50,3,25],["Иваново",-29,4.3,25],["Ивдель",-39,2.8,26],["Игарка",-49,5.2,23],["Ижевск",-31,5.1,28],["Ика",-50,2.7,26],["Им. Полины Осипенко",-40,3.2,27],["Индига",-35,10,18],["Иркутск",-33,2.9,26],["Исиль-Куль",-36,3.9,28],["Исить",-50,4.5,25],["Ича",-26,4.4,15],["Иэма",-57,1.8,22],["Йошкар-Ола",-31,4.6,26],["Казань",-29,3.9,27],["Калакан",-47,2.5,26],["Калевала",-33,3,22],["Калининград",-18,3.5,25],["Калуга",-25,3.9,26],["Каменск-Уральский",-35,2.3,27],["Камышин",-24,5.5,32],["Кандалакша",-30,3.6,21],["Канин Нос",-24,10.3,15],["Канск",-40,4.5,27],["Карасук",-37,5.5,29],["Каргополь",-29,3.6,24],["Катанда",-38,1.8,26],["Кашира",-26,3.9,25],["Кемерово",-39,3.4,27],["Кемь",-28,4.6,21],["Керчь",-12,6.3,33],["Кильмезь",-31,5.1,27],["Кинешма",-29,3.4,26],["Киренск",-49,3.6,27],["Кирилловка",-18,5.4,30],["Киров",-32,3.4,25],["Кировский",-30,2.4,28],["Киселевск",-35,4.5,27],["Кисловодск",-14,3.4,26],["Клепинино",-14,0,30],["Ключи",-33,3.9,22],["Ковдор",-32,2.5,21],["Козыревск",-35,5.9,24],["Койнас",-41,2.2,25],["Колпашево",-42,3.1,26],["Комсомольск-на- Амуре",-36,4,27],["Кондинское",-39,4.1,26],["Кондома",-36,2.9,27],["Корсаков",-19,4.1,21],["Корф",-29,6,16],["Кострома",-29,4.4,26],["Котельниково",-23,4.1,32],["Коткино",-41,4.3,22],["Котлас",-35,4.2,25],["Кочки",-38,5.1,28],["Кош-Агач",-42,3.3,22],["Красная Поляна",-7,1.5,28],["Краснодар",-15,3.2,32],["Краснощелье",-34,3.4,21],["Красноярск",-37,4.1,26],["Красный Чикой",-37,2.4,26],["Красный Яр",-32,2.4,28],["Крест-Хальджай",-54,1.3,27],["Кроноки",-20,3.8,16],["Кувандык",-31,4.7,32],["Купино",-38,5.8,28],["Курган",-36,5.4,28],["Курильск",-15,9.2,21],["Курск",-23,4,27],["Кызыл",-47,1.7,29],["Кыштовка",-39,3.9,27],["Кюсюр",-52,4.4,21],["Кяхта",-31,2.3,27],["Ленск",-50,4.2,26],["Леуши",-37,2.7,26],["Липецк",-25,5.2,28],["Ловозеро",-34,5.2,21],["Лопатка, мыс",-13,11.5,11],["Луганск",-23,3.5,30],["Магадан",-28,4.7,16],["Магас",-14,1.5,29],["Майкоп",-16,3.6,31],["Макаров",-23,3.1,22],["Мама",-44,2.7,27],["Маргаритово",-21,2.9,27],["Мариинск",-39,5,27],["Мариуполь",-16,0,30],["Марково",-47,3.4,22],["Марресаля",-40,7.7,15],["Махачкала",-13,5.2,29],["Мезень",-36,4.5,23],["Мелеуз",-33,4.6,30],["Мельничное",-31,4.1,28],["Миллерово",-22,6.5,30],["Мильково",-36,3.2,23],["Минеральные Воды",-18,4.5,30],["Минусинск",-40,4,28],["Мирный",-48,3.8,25],["Могоча",-40,3.5,25],["Можайск",-26,3.9,26],["Монды",-32,3,23],["Мончегорск",-32,6.5,22],["Москва",-26,2,26],["Мурманск",-28,5.4,21],["Муром",-28,3.6,27],["Нагорный",-40,4.2,23],["Нагорское",-33,3.7,24],["Надым",-45,4.5,24],["Наканно",-54,2.6,26],["Нальчик",-17,2.1,29],["Наро-Фоминск",-26,3.6,27],["Нарьян-Мар",-39,4.9,22],["Начики",-32,3.6,20],["Невельск",-16,7.1,21],["Невинномысск",-17,4.3,32],["Непа",-49,2.5,26],["Нера",-58,2.1,25],["Нерчинск",-42,4,28],["Нерчинский Завод",-38,2.4,26],["Ниванкюль",-34,3.1,22],["Нижнеангарск",-33,2.2,23],["Нижнетамбовское",-36,3.8,27],["Нижний Новгород",-27,4.4,27],["Николаевск-на-Амуре",-33,3.9,23],["Никольск",-34,2.8,26],["Новая Ладога",-27,3.7,24],["Новоаннинский",-25,4.3,32],["Новомосковский АО",-26,3.2,27],["Новосибирск",-37,4.2,27],["Ноглики",-30,4.1,23],["Ножовка",-34,3.5,27],["Норск",-41,2.1,27],["Нюрба",-53,2.6,26],["Нязепетровск",-34,3.4,26],["о.Беринга",-11,9.1,13],["о.Сосновец",-24,9.2,14],["Облучье",-36,1.9,27],["Объячево",-34,3.7,24],["Оймякон",-59,1.5,24],["Октябрьское",-41,2.2,24],["Олекминск",-49,3,26],["Оленек",-55,2.6,24],["Олонец",-29,4.6,24],["Омолон",-47,3.1,23],["Омск",-36,2.7,27],["Омсукчан",-48,4.6,22],["Онгудай",-36,2.1,27],["Онега",-31,4,24],["Орел",-25,4.5,28],["Оренбург",-29,5.6,32],["Орлинга",-45,2.6,26],["Оссора",-31,6.1,17],["Островное",-50,3.1,23],["Оха",-29,6.3,23],["Охотск",-32,4,17],["Охотский Перевоз",-54,1.6,26],["Паданы",-30,3.9,22],["Палатка",-35,3.9,22],["Партизанск",-21,5.4,26],["Пенза",-27,4.5,29],["Перевоз",-45,3.1,27],["Пермь",-35,3.4,26],["Петрозаводск",-28,3.9,23],["Петропавловск- Камчатский",-18,5,18],["Петрунь",-44,5.1,23],["Печора",-43,4.5,25],["Погиби",-30,6.2,19],["Порецкое",-29,5.6,28],["Поронайск",-26,3.8,20],["Посьет",-18,6.6,25],["Поярково",-35,2.5,28],["Преображение",-16,3.8,23],["Преображенка",-50,2.5,26],["Приморско-Ахтарск",-15,4.4,32],["Псков",-25,3.5,26],["Пялица",-26,8.2,18],["Реболы",-34,3.1,23],["Родино",-37,5.9,29],["Ростов-на-Дону",-18,5.5,31],["Рубцовск",-37,7.1,29],["Рудная Пристань",-19,4.6,23],["Рязань",-25,3.6,28],["Салехард",-43,3,21],["Самара",-27,3.5,29],["Сангар",-50,4.4,25],["Санкт-Петербург",-24,3.2,25],["Саранск",-28,6.7,27],["Сарапул",-31,3.7,27],["Саратов",-24,4.3,30],["Саскылах",-53,3.4,20],["Свободный",-37,2.9,28],["Севастополь",-7,0,31],["Семлячики",-15,7.9,17],["Симферополь",-13,6.2,30],["Сковородино",-39,2.3,26],["Славгород",-37,4.9,30],["Смоленск",-23,4.1,25],["Соболево",-30,3.3,17],["Советская Гавань",-25,4.2,23],["Сорочинск",-30,4.5,31],["Сортавала",-28,3.7,23],["Сосново-Озерское",-36,5,24],["Сосуново",-21,5.8,21],["Сосьва",-44,2,25],["Софийский Прииск",-42,1.7,23],["Сочи",-3,4.6,29],["Среднекан",-50,1.5,26],["Среднеколымск",-50,2,23],["Средний Васюган",-39,3.2,26],["Средний Калар",-46,3.3,25],["Ставрополь",-18,7.1,30],["Старица",-27,3.8,24],["Сунтар",-52,2.3,27],["Сургут",-42,4.5,26],["Сурское",-31,3.3,28],["Сусуман",-54,3.2,23],["Сухана",-58,2.7,24],["Сыктывкар",-35,3.3,25],["Таганрог",-17,4.6,30],["Тайга",-39,5,25],["Тайшет",-39,3.4,26],["Тамбов",-25,4.3,29],["Тара",-38,2.9,27],["Тарко-Сале",-47,3.6,24],["Татарск",-37,3.7,28],["Тверь",-27,3.8,25],["Терекли-Мектеб",-17,3.7,35],["Териберка",-21,10.9,19],["Тисуль",-39,6.5,26],["Тихвин",-29,3.2,25],["Тихорецк",-17,4.5,28],["Тобольск",-39,4.1,26],["Тогул",-35,4.4,27],["Токо",-51,2.5,25],["Томмот",-50,2,27],["Томпо",-54,2.6,25],["Томск",-39,2.4,26],["Топки",-37,4.6,26],["Тотьма",-33,3.1,25],["Троицкий АО",-26,3.9,26],["Троицкое",-32,3.9,27],["Троицко-Печорское",-39,3.1,25],["Тула",-24,3.6,26],["Тулун",-37,2.5,26],["Тунгокочен",-43,2.8,25],["Туой-Хая",-52,3,25],["Тупик",-43,2.1,26],["Тура",-53,2,25],["Туринск",-36,4.3,27],["Туруханск",-48,5.1,24],["Тында",-40,3,26],["Тюмень",-35,2.9,26],["Тяня",-50,2.3,28],["Уакит",-40,4.4,22],["Угут",-42,2.9,26],["Улан-Удэ",-35,2.1,28],["Ульяновск",-33,5.6,28],["Умба",-29,4.7,20],["Уренгой",-48,4.1,23],["Усть-Воямполка",-34,4,15],["Усть-Кабырза",-39,2.3,27],["Усть-Камчатск",-28,5.2,15],["Усть-Мая",-52,1.6,26],["Усть-Миль",-51,1.5,27],["Усть-Мома",-56,2.5,25],["Усть-Нюкжа",-43,1.8,26],["Усть-Озерное",-43,2.7,26],["Усть-Олой",-51,1.7,23],["Усть-Ордынский",-38,2.7,27],["Усть-Уса",-41,4.5,23],["Усть-Хайрюзово",-30,5.4,17],["Усть-Цильма",-40,4.7,23],["Усть-Щугор",-45,4.1,24],["Уфа",-33,3.9,28],["Ухта",-38,4,25],["Феодосия",-12,3.7,31],["Хабаровск",-29,3.8,27],["Ханты-Мансийск",-41,2.7,25],["Хатанга",-50,5.4,20],["Херсон",-16,4.2,30],["Ходовариха",-32,8.6,15],["Холмск",-17,5.9,21],["Хоринск",-38,4.8,28],["Хоседа-Хард",-42,6.7,22],["Чара",-45,1.6,25],["Чебоксары",-29,6.1,27],["Челюскин, мыс",-41,8.3,5],["Челябинск",-32,3.7,27],["Чердынь",-37,4,25],["Черкесск",-16,3.8,29],["Черлак",-36,3.3,29],["Черняево",-40,3.7,28],["Черусти",-27,3.1,27],["Чечуйск",-49,4.7,27],["Чита",-37,1.5,27],["Чугуевка",-30,2.2,29],["Чулым",-38,4.9,27],["Чульман",-43,3.4,24],["Чумикан",-32,6.5,23],["Чурапча",-54,1.9,27],["Чухлома",-32,3.6,25],["Шамары",-36,3.1,26],["Шарья",-32,3.4,26],["Шелагонцы",-57,1.7,25],["Шенкурск",-35,3.9,25],["Шимановск",-37,3.1,28],["Шира",-36,4.3,26],["Эйк",-52,2.7,23],["Экимчан",-42,1.6,26],["Элиста",-21,8.2,33],["Эльтон",-24,5.8,33],["Эньмувеем",-48,4.7,21],["Южно-Курильск",-12,6.7,19],["Южно-Сахалинск",-21,3.3,23],["Яйлю",-24,3.7,25],["Якутск",-52,1.7,27],["Ялта",-4,2.8,31],["Янаул",-34,6,28],["Ярославль",-29,4.7,26],["Ярцево",-46,4.1,26]];
+      var WEBHOOK_URL = "https://frostily-tough-naiad.cloudpub.ru/webhook/dda11149-8037-46f6-8586-c3e190e26b18";
+      var MODULE_META = {
+        module: "calc_smoke_stairwell_outdoor",
+        moduleGroup: "calc_ov",
+        moduleVersion: "n8n-shell",
+        sourceFile: "calc_smoke_stairwell_outdoor_n8n.html"
+      };
+      var DEFAULT_CITY = { city: "Екатеринбург", cold: -32, wind: 4, warm: 26 };
+      var WINDOW_LEAKAGE = 6;
+      var state = {
+        cityData: [],
+        climateMap: {},
+        calc: null,
+        citySuggestItems: [],
+        citySuggestActive: -1,
+        calcRequestSeq: 0,
+        debounceTimer: null,
+        currentController: null
+      };
+
+      var els = {
+        city: document.getElementById("city"),
+        citySuggest: document.getElementById("citySuggest"),
+        coldTemp: document.getElementById("coldTemp"),
+        windSpeed: document.getElementById("windSpeed"),
+        climateStatus: document.getElementById("climateStatus"),
+        objectName: document.getElementById("objectName"),
+        indoorTemp: document.getElementById("indoorTemp"),
+        floors: document.getElementById("floors"),
+        floorHeight: document.getElementById("floorHeight"),
+        buildingType: document.getElementById("buildingType"),
+        stairsToCorridorCount: document.getElementById("stairsToCorridorCount"),
+        facadeHeight: document.getElementById("facadeHeight"),
+        facadeLength: document.getElementById("facadeLength"),
+        sideFacadeLength: document.getElementById("sideFacadeLength"),
+        consecutiveDoors: document.getElementById("consecutiveDoors"),
+        outerDoorArea: document.getElementById("outerDoorArea"),
+        outerDoorHeight: document.getElementById("outerDoorHeight"),
+        stairDoorArea: document.getElementById("stairDoorArea"),
+        secondFloorDoorHeight: document.getElementById("secondFloorDoorHeight"),
+        doorType: document.getElementById("doorType"),
+        windowArea: document.getElementById("windowArea"),
+        stairArea: document.getElementById("stairArea"),
+        tambourType: document.getElementById("tambourType"),
+        fanInstallHeight: document.getElementById("fanInstallHeight"),
+        networkLoss: document.getElementById("networkLoss"),
+        summaryGrid: document.getElementById("summaryGrid"),
+        reportFormat: document.getElementById("reportFormat"),
+        exportReportBtn: document.getElementById("exportReportBtn"),
+        calcStatus: document.getElementById("calcStatus")
+      };
+
+      function toNum(value, fallback) {
+        var normalized = String(value == null ? "" : value).replace(",", ".").trim();
+        var num = Number(normalized);
+        return Number.isFinite(num) ? num : fallback;
+      }
+
+      function fmt(value, digits) {
+        if (!Number.isFinite(value)) return "—";
+        return value.toFixed(digits).replace(".", ",");
+      }
+
+      function fmtTrimmed(value, digits) {
+        if (!Number.isFinite(value)) return "—";
+        var text = value.toFixed(digits).replace(".", ",");
+        return text.replace(/,?0+$/, "").replace(/,$/, "");
+      }
+
+      function reportFormula(items) {
+        return { title: "Краткая методика расчета", items: items };
+      }
+
+      function reportSubstitute(expression, result) {
+        return { expression: expression, result: result };
+      }
+
+      function round(value, digits) {
+        var factor = Math.pow(10, digits || 0);
+        return Math.round(value * factor) / factor;
+      }
+
+      function roundUp(value, step) {
+        return Math.ceil(value / step) * step;
+      }
+
+      function safeSqrt(value) {
+        return Math.sqrt(Math.max(0, value));
+      }
+
+      function normalizeCityName(name) {
+        return String(name || "")
+          .toLowerCase()
+          .replace(/\s+/g, " ")
+          .replace(/\n/g, " ")
+          .replace(/\u00a0/g, " ")
+          .replace(/\s*-\s*/g, "-")
+          .trim();
+      }
+
+      function escapeHtml(text) {
+        return String(text == null ? "" : text)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function setStatus(text, stateName) {
+        els.calcStatus.className = "status-line" + (stateName ? " status-" + stateName : "");
+        els.calcStatus.textContent = text || "";
+      }
+
+      function clearSummary() {
+        els.summaryGrid.innerHTML = "";
+        state.calc = null;
+      }
+
+      function loadScript(url) {
+        return new Promise(function (resolve, reject) {
+          var script = document.createElement("script");
+          script.src = url;
+          script.onload = resolve;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
+
+      function loadFirstAvailable(urls) {
+        return new Promise(function (resolve, reject) {
+          var idx = 0;
+          function next() {
+            if (idx >= urls.length) {
+              reject(new Error("script_load_failed"));
+              return;
+            }
+            loadScript(urls[idx++]).then(resolve).catch(next);
+          }
+          next();
+        });
+      }
+
+      function ensurePdfLibs() {
+        function resolvePdfMake() {
+          var candidate = window.pdfMake || window.pdfmake || window.pdfMakeDefault || null;
+          if (candidate && candidate.default && candidate.default.createPdf) candidate = candidate.default;
+          if (candidate && candidate.createPdf) {
+            window.pdfMake = candidate;
+            return candidate;
+          }
+          return null;
+        }
+        var existing = resolvePdfMake();
+        if (existing && existing.vfs) return Promise.resolve(existing);
+        var corePromise = existing
+          ? Promise.resolve(existing)
+          : loadScript("https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js").then(function () {
+              var core = resolvePdfMake();
+              if (!core) throw new Error("pdfmake_core_not_loaded");
+              return core;
+            });
+        return corePromise.then(function (core) {
+          if (core.vfs) return core;
+          return loadScript("https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.min.js").then(function () {
+            var normalized = resolvePdfMake();
+            if (!normalized) throw new Error("pdfmake_not_available");
+            return normalized;
+          });
+        });
+      }
+
+      function ensureDocxLibs() {
+        if (window.docx && window.docx.Packer) return Promise.resolve();
+        return loadFirstAvailable([
+          "https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js",
+          "https://unpkg.com/docx@8.5.0/build/index.umd.js"
+        ]);
+      }
+
+      function downloadBlob(blob, filename) {
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+      }
+
+      function fileSafeName(name) {
+        return String(name || "otchet")
+          .trim()
+          .replace(/[\\/:*?"<>|]+/g, "_")
+          .replace(/\s+/g, "_")
+          .slice(0, 80) || "otchet";
+      }
+
+      function normalizeNumericDisplay(value) {
+        return String(value == null ? "" : value).replace(/\./g, ",");
+      }
+
+      function bindNumericFormatting() {
+        Array.prototype.forEach.call(document.querySelectorAll('input[inputmode="decimal"]'), function (input) {
+          input.addEventListener("input", function () {
+            var start = input.selectionStart;
+            var end = input.selectionEnd;
+            var before = input.value;
+            var normalized = normalizeNumericDisplay(before);
+            if (before !== normalized) {
+              input.value = normalized;
+              if (typeof start === "number" && typeof end === "number") {
+                input.setSelectionRange(start, end);
+              }
+            }
+          });
+          if (input.value) input.value = normalizeNumericDisplay(input.value);
+        });
+
+        ["floors", "stairsToCorridorCount", "consecutiveDoors"].forEach(function (id) {
+          var input = document.getElementById(id);
+          if (!input) return;
+          input.addEventListener("input", function () {
+            var cleaned = input.value.replace(/[^\d]/g, "");
+            if (input.value !== cleaned) input.value = cleaned;
+          });
+        });
+      }
+
+      function hideCitySuggestions() {
+        els.citySuggest.classList.remove("is-open");
+        els.citySuggest.innerHTML = "";
+        state.citySuggestItems = [];
+        state.citySuggestActive = -1;
+      }
+
+      function updateCitySuggestionActive() {
+        Array.prototype.forEach.call(els.citySuggest.querySelectorAll(".city-suggest-item"), function (node, index) {
+          node.classList.toggle("is-active", index === state.citySuggestActive);
+        });
+      }
+
+      function applyCitySelection(cityName) {
+        els.city.value = cityName;
+        hideCitySuggestions();
+        scheduleCalculation();
+      }
+
+      function renderCitySuggestions(query) {
+        var normalizedQuery = normalizeCityName(query);
+        var starts = [];
+        var includes = [];
+        var fallback = [];
+        state.cityData.forEach(function (item) {
+          var cityKey = normalizeCityName(item.city);
+          if (!cityKey) return;
+          if (!normalizedQuery) {
+            fallback.push(item);
+            return;
+          }
+          if (cityKey === normalizedQuery) return;
+          if (cityKey.indexOf(normalizedQuery) === 0) starts.push(item);
+          else if (cityKey.indexOf(normalizedQuery) !== -1) includes.push(item);
+        });
+        state.citySuggestItems = normalizedQuery ? starts.concat(includes).slice(0, 8) : fallback;
+        if (!state.citySuggestItems.length) {
+          hideCitySuggestions();
+          return;
+        }
+        els.citySuggest.innerHTML = state.citySuggestItems.map(function (item, index) {
+          return '<button class="city-suggest-item' + (index === 0 ? " is-active" : "") + '" type="button" data-city="' + escapeHtml(item.city) + '">' + escapeHtml(item.city) + "</button>";
+        }).join("");
+        state.citySuggestActive = 0;
+        els.citySuggest.classList.add("is-open");
+      }
+
+      function bindCityAutocomplete() {
+        els.city.addEventListener("focus", function () {
+          renderCitySuggestions(els.city.value);
+        });
+        els.city.addEventListener("input", function () {
+          renderCitySuggestions(els.city.value);
+        });
+        els.city.addEventListener("keydown", function (event) {
+          if (!els.citySuggest.classList.contains("is-open")) return;
+          if (event.key === "ArrowDown") {
+            event.preventDefault();
+            state.citySuggestActive = Math.min(state.citySuggestActive + 1, state.citySuggestItems.length - 1);
+            updateCitySuggestionActive();
+          } else if (event.key === "ArrowUp") {
+            event.preventDefault();
+            state.citySuggestActive = Math.max(state.citySuggestActive - 1, 0);
+            updateCitySuggestionActive();
+          } else if (event.key === "Enter") {
+            if (state.citySuggestActive >= 0 && state.citySuggestItems[state.citySuggestActive]) {
+              event.preventDefault();
+              applyCitySelection(state.citySuggestItems[state.citySuggestActive].city);
+            }
+          } else if (event.key === "Escape") {
+            hideCitySuggestions();
+          }
+        });
+        els.citySuggest.addEventListener("mousedown", function (event) {
+          var button = event.target.closest(".city-suggest-item");
+          if (!button) return;
+          event.preventDefault();
+          applyCitySelection(button.getAttribute("data-city") || "");
+        });
+        document.addEventListener("click", function (event) {
+          if (event.target === els.city || els.citySuggest.contains(event.target)) return;
+          hideCitySuggestions();
+        });
+      }
+
+      function tambourResistance(value) {
+        if (value === "z-образный") return 2.9;
+        if (value === "прямоугольный") return 0.99;
+        return 0;
+      }
+
+      function getInputs() {
+        var cityKey = normalizeCityName(els.city.value);
+        var climate = state.climateMap[cityKey] || DEFAULT_CITY;
+        els.coldTemp.value = fmt(climate.cold, 1);
+        els.windSpeed.value = fmt(climate.wind, 1);
+        els.climateStatus.textContent = "Климатические параметры приняты по выбранному городу.";
+        return {
+          objectName: els.objectName.value.trim(),
+          city: els.city.value.trim() || DEFAULT_CITY.city,
+          climate: climate,
+          A5: climate.cold,
+          B5: toNum(els.indoorTemp.value, 18),
+          C5: toNum(els.windSpeed.value || climate.wind, climate.wind),
+          D5: toNum(els.floorHeight.value, 3.15),
+          floors: Math.max(2, Math.round(toNum(els.floors.value, 20))),
+          E5: els.buildingType.value,
+          F5: toNum(els.facadeHeight.value, 63),
+          G5: toNum(els.facadeLength.value, 52),
+          H5: toNum(els.sideFacadeLength.value, 15.5),
+          I5: Math.max(1, Math.round(toNum(els.consecutiveDoors.value, 1))),
+          J5: toNum(els.outerDoorArea.value, 3.24),
+          K5: toNum(els.outerDoorHeight.value, 2.7),
+          L5: toNum(els.stairDoorArea.value, 2.11),
+          M5: toNum(els.secondFloorDoorHeight.value, 2.7),
+          N5: els.doorType.value,
+          O5: toNum(els.windowArea.value, 4.7),
+          P5: toNum(els.stairArea.value, 15.2),
+          Q5: els.tambourType.value,
+          H8: Math.max(1, Math.round(toNum(els.stairsToCorridorCount.value, 1))),
+          B40: toNum(els.fanInstallHeight.value, 65),
+          B41: toNum(els.networkLoss.value, 200)
+        };
+      }
+
+      function validateInputs(inputs) {
+        if (inputs.floors < 2) return "Количество этажей должно быть не меньше 2.";
+        if (inputs.J5 <= 0 || inputs.L5 <= 0 || inputs.P5 <= 0) return "Площади дверей и площадь ЛК должны быть больше нуля.";
+        if (inputs.K5 <= 0 || inputs.M5 <= 0 || inputs.D5 <= 0) return "Высоты должны быть больше нуля.";
+        return "";
+      }
+
+      function buildPayload() {
+        return {
+          meta: MODULE_META,
+          requestMeta: {
+            requestedAt: new Date().toISOString(),
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+            userAgent: navigator.userAgent,
+            page: location.href
+          },
+          inputs: getInputs()
+        };
+      }
+
+      function normalizeResponse(data) {
+        if (!data || typeof data !== "object" || !data.calc || !data.calc.summary) {
+          throw new Error("Webhook не вернул блок calc.summary.");
+        }
+        return data.calc;
+      }
+
+      function computeModel(inputs) {
+        var xiR = tambourResistance(inputs.Q5);
+        var kww = 0.8;
+        var kws = -0.4;
+        var kw0 = -0.6;
+        var Ts = (inputs.A5 + inputs.B5) / 2;
+        var rhoA = 353 / (273 + inputs.A5);
+        var rhoR = 353 / (273 + inputs.B5);
+        var rhoS = 353 / (273 + Ts);
+        var Sda = (inputs.N5 === "Обычная" ? 5300 : 60000) / rhoS;
+        var stairCalcCount = inputs.H8 === 1 ? 1 : inputs.H8 - 1;
+        var secondFloorMark = 2 * inputs.D5 + 0.2;
+        var ps2 = 20 - 9.8 * (secondFloorMark + 0.5 * inputs.M5) * (rhoS - rhoR) + 0.25 * (kww - kw0) * rhoA * Math.pow(inputs.C5, 2);
+        var gsaNumerator = 2 * rhoS * (ps2 + 0.5 * 9.8 * inputs.K5 * (rhoA - rhoS));
+        var gsaDenominator = ((inputs.I5 * 2.44 + xiR + 1) / Math.pow(inputs.J5, 2)) + 60 / Math.pow(inputs.P5, 2);
+        var Gsa = safeSqrt(gsaNumerator / gsaDenominator);
+        var buildingCoeff = inputs.E5 === "Жилое" ? 1 : 1.2;
+        var Gs2 = buildingCoeff * inputs.L5 * Math.sqrt(inputs.M5) / stairCalcCount;
+        var initialGs = Math.max(Gsa, Gs2);
+        var rows = [{
+          floor: 2,
+          mark: secondFloorMark,
+          Ps: ps2,
+          Gsd: null,
+          Gsw: null,
+          Gs: initialGs
+        }];
+
+        for (var floor = 3; floor <= inputs.floors; floor++) {
+          var prev = rows[rows.length - 1];
+          var mark = prev.mark + inputs.D5;
+          var Ps = prev.Ps + 0.5 * 60 * rhoS * Math.pow(prev.Gs / (rhoS * inputs.P5), 2);
+          var doorPressure = Ps + 9.81 * (mark + 0.5 * inputs.M5) * (rhoS - rhoR) - 0.25 * (kww - kw0) * rhoA * Math.pow(inputs.C5, 2);
+          var Gsd = inputs.L5 / Math.sqrt(Sda) * safeSqrt(doorPressure);
+          var windowPressure = Ps + 9.81 * (mark + 0.5 * inputs.M5) * (rhoS - rhoR);
+          var Gsw = 6 * Math.pow(10, -5) * (inputs.O5 * Math.pow(Math.max(0, windowPressure), 0.67)) / (1 / WINDOW_LEAKAGE);
+          rows.push({
+            floor: floor,
+            mark: mark,
+            Ps: Ps,
+            Gsd: Gsd,
+            Gsw: Gsw,
+            Gs: prev.Gs + Gsd + Gsw
+          });
+        }
+
+        var last = rows[rows.length - 1];
+        var volumeFlow = last.Gs * 3600 / rhoA;
+        var roundedVolumeFlow = round(volumeFlow, -1);
+        var fanPressure = last.Ps - (-0.6 * rhoA * Math.pow(inputs.C5, 2) / 2 - 9.8 * inputs.B40 * (rhoA - rhoR)) + inputs.B41;
+
+        return {
+          inputs: inputs,
+          climate: { cold: inputs.A5, wind: inputs.C5 },
+          coeffs: {
+            xiR: xiR,
+            kww: kww,
+            kws: kws,
+            kw0: kw0,
+            Ts: Ts,
+            rhoA: rhoA,
+            rhoR: rhoR,
+            rhoS: rhoS,
+            Sda: Sda,
+            stairCount: inputs.H8,
+            calcStairCount: stairCalcCount,
+            Gsa: Gsa,
+            Gs2: Gs2,
+            initialGs: initialGs
+          },
+          rows: rows,
+          summary: {
+            volumeFlow: volumeFlow,
+            roundedVolumeFlow: roundedVolumeFlow,
+            fanPressure: fanPressure,
+            fanInstallHeight: inputs.B40,
+            networkLoss: inputs.B41,
+            lastPs: last.Ps,
+            lastGs: last.Gs
+          }
+        };
+      }
+
+      function renderMetricCard(title, value, digits, suffix, blue) {
+        return "<div class='metric-card" + (blue ? " metric-blue" : "") + "'>" +
+          "<span class='metric-label'>" + title + "</span>" +
+          "<span class='metric-value'>" + fmt(value, digits) + (suffix ? " " + suffix : "") + "</span>" +
+          "</div>";
+      }
+
+      function renderPairTable(tableEl, title, rows) {
+        var html = "<thead><tr><th colspan='2'>" + escapeHtml(title) + "</th></tr></thead><tbody>";
+        rows.forEach(function (row) {
+          html += "<tr><td>" + escapeHtml(String(row[0])) + "</td><td class='num'>" + escapeHtml(String(row[1])) + "</td></tr>";
+        });
+        html += "</tbody>";
+        tableEl.innerHTML = html;
+      }
+
+      function renderSectionTable(tableEl, headers, rows, numericCols) {
+        var html = "<thead><tr>";
+        headers.forEach(function (header, idx) {
+          html += "<th" + (numericCols.indexOf(idx) >= 0 ? " class='num'" : "") + ">" + escapeHtml(String(header)) + "</th>";
+        });
+        html += "</tr></thead><tbody>";
+        rows.forEach(function (row) {
+          html += "<tr>";
+          row.forEach(function (cell, idx) {
+            html += "<td" + (numericCols.indexOf(idx) >= 0 ? " class='num'" : "") + ">" + escapeHtml(String(cell)) + "</td>";
+          });
+          html += "</tr>";
+        });
+        html += "</tbody>";
+        tableEl.innerHTML = html;
+      }
+
+      function render(calc) {
+        els.summaryGrid.innerHTML =
+          renderMetricCard("Объемный расход вентилятора подпора в лестничную клетку", calc.summary.roundedVolumeFlow, 0, "м³/ч", true) +
+          renderMetricCard("Давление вентилятора подпора в лестничную клетку", calc.summary.fanPressure, 0, "Па", false);
+      }
+
+      function buildReportState() {
+        if (!state.calc) return null;
+        var calc = state.calc;
+        return {
+          title: "Расчет противодымной вентиляции лестничной клетки с выходом наружу без вестибюля",
+          objectName: calc.inputs.objectName || "Без названия",
+          createdAt: new Date().toLocaleString("ru-RU"),
+          sections: [
+            {
+              title: "1. Исходные данные",
+              type: "pairs",
+              rows: [
+                ["Объект", calc.inputs.objectName || "Без названия"],
+                ["Населенный пункт", calc.inputs.city],
+                ["Температура наружного воздуха в холодный период года, °С", fmt(calc.inputs.A5, 1)],
+                ["Температура внутри здания, °С", fmt(calc.inputs.B5, 1)],
+                ["Скорость ветра, м/с", fmt(calc.inputs.C5, 1)],
+                ["Высота этажа, м", fmtTrimmed(calc.inputs.D5, 2)],
+                ["Количество этажей здания", String(calc.inputs.floors)],
+                ["Вид здания", calc.inputs.E5],
+                ["Высота фасада, м", fmtTrimmed(calc.inputs.F5, 2)],
+                ["Длина фасада, м", fmtTrimmed(calc.inputs.G5, 2)],
+                ["Длина бокового фасада, м", fmtTrimmed(calc.inputs.H5, 2)],
+                ["Количество последовательно расположенных наружных дверей", String(calc.inputs.I5)],
+                ["Площадь наружной двери, м²", fmtTrimmed(calc.inputs.J5, 2)],
+                ["Высота наружной двери, м", fmtTrimmed(calc.inputs.K5, 2)],
+                ["Площадь двери ЛК на этаже, м²", fmtTrimmed(calc.inputs.L5, 2)],
+                ["Высота двери на 2 этаже, м", fmtTrimmed(calc.inputs.M5, 2)],
+                ["Вид двери", calc.inputs.N5],
+                ["Площадь окна ЛК на одном этаже, м²", fmtTrimmed(calc.inputs.O5, 2)],
+                ["Площадь лестничной клетки, м²", fmtTrimmed(calc.inputs.P5, 2)],
+                ["Вид/наличие тамбура", calc.inputs.Q5],
+                ["Количество ЛК, выходящих в коридор", String(calc.inputs.H8)],
+                ["Высота установки вентилятора, м", fmtTrimmed(calc.inputs.B40, 2)],
+                ["Потери в обвязке вентилятора, Па", fmt(calc.inputs.B41, 0)]
+              ]
+            },
+            {
+              title: "2. Коэффициенты и характеристики воздуха",
+              type: "table",
+              headers: ["Показатель", "Значение"],
+              method: reportFormula([
+                {
+                  name: "Температура воздуха в ЛК",
+                  formula: "Ts = (Ta + Tr) / 2",
+                  details: ["Ta - наружная температура в холодный период, °С", "Tr - температура внутри здания, °С"],
+                  substitute: reportSubstitute(
+                    "Ts = (" + fmtTrimmed(calc.inputs.A5, 1) + " + " + fmtTrimmed(calc.inputs.B5, 1) + ") / 2",
+                    "Ts = " + fmt(calc.coeffs.Ts, 1) + " °С"
+                  )
+                },
+                {
+                  name: "Плотности воздуха",
+                  formula: "ρ = 353 / (273 + t)",
+                  details: ["Для наружного воздуха применяется Ta, для внутреннего Tr, для ЛК Ts"],
+                  substitute: reportSubstitute(
+                    "ρa = 353 / (273 + " + fmtTrimmed(calc.inputs.A5, 1) + "); ρr = 353 / (273 + " + fmtTrimmed(calc.inputs.B5, 1) + "); ρs = 353 / (273 + " + fmt(calc.coeffs.Ts, 1) + ")",
+                    "ρa = " + fmt(calc.coeffs.rhoA, 3) + " кг/м³; ρr = " + fmt(calc.coeffs.rhoR, 3) + " кг/м³; ρs = " + fmt(calc.coeffs.rhoS, 3) + " кг/м³"
+                  )
+                },
+                {
+                  name: "Характеристика воздухопроницаемости закрытой двери",
+                  formula: "Sda = 5300 / ρs или 60000 / ρs",
+                  details: ["Для обычной двери берется 5300/ρs, для дымогазонепроницаемой 60000/ρs"],
+                  substitute: reportSubstitute(
+                    (calc.inputs.N5 === "Обычная" ? "Sda = 5300 / " : "Sda = 60000 / ") + fmt(calc.coeffs.rhoS, 3),
+                    "Sda = " + fmt(calc.coeffs.Sda, 2) + " м³/кг"
+                  )
+                },
+                {
+                  name: "Расход через наружную дверь на 2 этаже",
+                  formula: "Gsa = sqrt((2*ρs*(Ps2 + 0,5*g*hda*(ρa-ρs))) / (((n*2,44+ξr+1)/Fda²) + 60/Fs²))",
+                  details: ["n - число последовательно расположенных наружных дверей", "ξr - коэффициент местного сопротивления тамбура"],
+                  substitute: reportSubstitute(
+                    "Gsa = sqrt((2*" + fmt(calc.coeffs.rhoS, 3) + "*(" + fmt(calc.rows[0].Ps, 2) + " + 0,5*9,8*" + fmtTrimmed(calc.inputs.K5, 2) + "*(" + fmt(calc.coeffs.rhoA, 3) + "-" + fmt(calc.coeffs.rhoS, 3) + "))) / (((" + String(calc.inputs.I5) + "*2,44+" + fmt(calc.coeffs.xiR, 2) + "+1)/" + fmtTrimmed(calc.inputs.J5, 2) + "²) + 60/" + fmtTrimmed(calc.inputs.P5, 2) + "²))",
+                    "Gsa = " + fmt(calc.coeffs.Gsa, 3) + " кг/с"
+                  )
+                },
+                {
+                  name: "Расход через открытую дверь на этаже пожара",
+                  formula: "Gs2 = k*Fd*sqrt(hd2)/nрасч",
+                  details: ["k = 1 для жилого здания, 1,2 для остальных", "nрасч - расчетное количество ЛК"],
+                  substitute: reportSubstitute(
+                    "Gs2 = " + (calc.inputs.E5 === "Жилое" ? "1" : "1,2") + "*" + fmtTrimmed(calc.inputs.L5, 2) + "*sqrt(" + fmtTrimmed(calc.inputs.M5, 2) + ")/" + String(calc.coeffs.calcStairCount),
+                    "Gs2 = " + fmt(calc.coeffs.Gs2, 3) + " кг/с"
+                  )
+                }
+              ]),
+              rows: [
+                ["Коэффициент местного сопротивления тамбура", fmt(calc.coeffs.xiR, 2)],
+                ["Коэффициент давления на наветренном фасаде", fmt(calc.coeffs.kww, 1)],
+                ["Коэффициент давления на боковом фасаде", fmt(calc.coeffs.kws, 1)],
+                ["Коэффициент давления на заветренном фасаде", fmt(calc.coeffs.kw0, 1)],
+                ["Температура в лестничной клетке, °С", fmt(calc.coeffs.Ts, 1)],
+                ["Плотность наружного воздуха, кг/м³", fmt(calc.coeffs.rhoA, 3)],
+                ["Плотность внутреннего воздуха, кг/м³", fmt(calc.coeffs.rhoR, 3)],
+                ["Плотность воздуха в лестничной клетке, кг/м³", fmt(calc.coeffs.rhoS, 3)],
+                ["Характеристика воздухопроницаемости двери, м³/кг", fmt(calc.coeffs.Sda, 2)],
+                ["Расчетное количество ЛК", String(calc.coeffs.calcStairCount)],
+                ["Расход на наружной двери, кг/с", fmt(calc.coeffs.Gsa, 3)],
+                ["Расход через открытую дверь на этаже пожара, кг/с", fmt(calc.coeffs.Gs2, 3)],
+                ["Итоговый расход на 2 этаже, кг/с", fmt(calc.coeffs.initialGs, 3)]
+              ]
+            },
+            {
+              title: "3. Поэтажный расчет",
+              type: "table",
+              headers: ["Этаж", "Отметка этажа, м", "Давление, Па", "Подсос через дверь, кг/с", "Подсос через окна, кг/с", "Итоговый расход, кг/с"],
+              method: reportFormula([
+                {
+                  name: "Давление на 2 этаже",
+                  formula: "Ps2 = 20 - 9,8*(h2 + 0,5*hd2)*(ρs - ρr) + 0,25*(kww - kw0)*ρa*va²",
+                  details: ["h2 - отметка 2 этажа, м", "va - скорость ветра, м/с"],
+                  substitute: reportSubstitute(
+                    "Ps2 = 20 - 9,8*(" + fmt(calc.rows[0].mark, 2) + " + 0,5*" + fmtTrimmed(calc.inputs.M5, 2) + ")*(" + fmt(calc.coeffs.rhoS, 3) + " - " + fmt(calc.coeffs.rhoR, 3) + ") + 0,25*(" + fmt(calc.coeffs.kww, 1) + " - " + fmt(calc.coeffs.kw0, 1) + ")*" + fmt(calc.coeffs.rhoA, 3) + "*" + fmtTrimmed(calc.inputs.C5, 1) + "²",
+                    "Ps2 = " + fmt(calc.rows[0].Ps, 2) + " Па"
+                  )
+                },
+                {
+                  name: "Давление на следующем этаже",
+                  formula: "Psi = Ps(i-1) + 0,5*60*ρs*(Gs(i-1)/(ρs*Fs))²",
+                  details: ["Fs - площадь ЛК, м²"],
+                  substitute: calc.rows.length > 1 ? reportSubstitute(
+                    "P3 = " + fmt(calc.rows[0].Ps, 2) + " + 0,5*60*" + fmt(calc.coeffs.rhoS, 3) + "*(" + fmt(calc.rows[0].Gs, 3) + "/(" + fmt(calc.coeffs.rhoS, 3) + "*" + fmtTrimmed(calc.inputs.P5, 2) + "))²",
+                    "P3 = " + fmt(calc.rows[1].Ps, 2) + " Па"
+                  ) : reportSubstitute("Расчет выполнен только для 2 этажа.", "Результат отсутствует.")
+                },
+                {
+                  name: "Подсос через дверь этажа",
+                  formula: "Gsdi = Fd/sqrt(Sda) * sqrt(Psi + 9,81*(hi + 0,5*hd2)*(ρs - ρr) - 0,25*(kww-kw0)*ρa*va²)",
+                  details: ["Fd - площадь двери ЛК на этаже, м²"],
+                  substitute: calc.rows.length > 1 ? reportSubstitute(
+                    "Gsd3 = " + fmtTrimmed(calc.inputs.L5, 2) + "/sqrt(" + fmt(calc.coeffs.Sda, 2) + ") * sqrt(" + fmt(calc.rows[1].Ps, 2) + " + 9,81*(" + fmt(calc.rows[1].mark, 2) + " + 0,5*" + fmtTrimmed(calc.inputs.M5, 2) + ")*(" + fmt(calc.coeffs.rhoS, 3) + " - " + fmt(calc.coeffs.rhoR, 3) + ") - 0,25*(" + fmt(calc.coeffs.kww, 1) + " - " + fmt(calc.coeffs.kw0, 1) + ")*" + fmt(calc.coeffs.rhoA, 3) + "*" + fmtTrimmed(calc.inputs.C5, 1) + "²)",
+                    "Gsd3 = " + fmt(calc.rows[1].Gsd, 3) + " кг/с"
+                  ) : reportSubstitute("—", "—")
+                },
+                {
+                  name: "Подсос через оконные проемы",
+                  formula: "Gswi = 6*10^-5 * (Fw * P^0,67) / (1/6)",
+                  details: ["Fw - площадь оконного проема, м²", "6 - воздухопроницаемость оконных проемов, кг/(м²*ч)"],
+                  substitute: calc.rows.length > 1 ? reportSubstitute(
+                    "Gsw3 = 6*10^-5*(" + fmtTrimmed(calc.inputs.O5, 2) + "*" + fmt(round(calc.rows[1].Ps + 9.81 * (calc.rows[1].mark + 0.5 * calc.inputs.M5) * (calc.coeffs.rhoS - calc.coeffs.rhoR), 2), 2) + "^0,67)/(1/6)",
+                    "Gsw3 = " + fmt(calc.rows[1].Gsw, 3) + " кг/с"
+                  ) : reportSubstitute("—", "—")
+                },
+                {
+                  name: "Итоговый массовый расход на этаже",
+                  formula: "Gsi = Gs(i-1) + Gsdi + Gswi",
+                  details: ["Рекуррентная сумма накапливает расходы по этажам"],
+                  substitute: reportSubstitute(
+                    "Gвент = " + fmt(calc.rows[calc.rows.length - 2] ? calc.rows[calc.rows.length - 2].Gs : calc.rows[0].Gs, 3) + " + " + fmt(calc.rows[calc.rows.length - 1].Gsd || 0, 3) + " + " + fmt(calc.rows[calc.rows.length - 1].Gsw || 0, 3),
+                    "Массовый расход вентилятора подпора в ЛК = " + fmt(calc.summary.lastGs, 3) + " кг/с"
+                  )
+                }
+              ]),
+              rows: calc.rows.map(function (row) {
+                return [
+                  String(row.floor),
+                  fmt(row.mark, 2),
+                  fmt(row.Ps, 2),
+                  row.Gsd == null ? "—" : fmt(row.Gsd, 3),
+                  row.Gsw == null ? "—" : fmt(row.Gsw, 3),
+                  fmt(row.Gs, 3)
+                ];
+              })
+            },
+            {
+              title: "4. Итоговые значения",
+              type: "table",
+              headers: ["Показатель", "Значение"],
+              method: reportFormula([
+                {
+                  name: "Объемный расход вентилятора подпора в ЛК",
+                  formula: "L = GsN * 3600 / ρa",
+                  details: ["GsN - итоговый массовый расход на верхнем расчетном этаже, кг/с"],
+                  substitute: reportSubstitute(
+                    "L = " + fmt(calc.summary.lastGs, 3) + "*3600/" + fmt(calc.coeffs.rhoA, 3),
+                    "Объемный расход вентилятора подпора в ЛК = " + fmt(calc.summary.roundedVolumeFlow, 0) + " м³/ч"
+                  )
+                },
+                {
+                  name: "Давление вентилятора",
+                  formula: "Pвент = PsN - (-0,6*ρa*va²/2 - 9,8*hвент*(ρa-ρr)) + ΔPсети",
+                  details: ["PsN - давление на верхнем расчетном этаже, Па", "hвент - высота установки вентилятора, м", "ΔPсети - потери в обвязке вентилятора, Па"],
+                  substitute: reportSubstitute(
+                    "Pвент = " + fmt(calc.summary.lastPs, 2) + " - (-0,6*" + fmt(calc.coeffs.rhoA, 3) + "*" + fmtTrimmed(calc.inputs.C5, 1) + "²/2 - 9,8*" + fmtTrimmed(calc.inputs.B40, 2) + "*(" + fmt(calc.coeffs.rhoA, 3) + "-" + fmt(calc.coeffs.rhoR, 3) + ")) + " + fmt(calc.summary.networkLoss, 0),
+                    "Давление вентилятора подпора в ЛК = " + fmt(calc.summary.fanPressure, 2) + " Па"
+                  )
+                }
+              ]),
+              rows: [
+                ["Объемный расход вентилятора подпора в ЛК, м³/ч", fmt(calc.summary.roundedVolumeFlow, 0)],
+                ["Высота установки вентилятора, м", fmt(calc.summary.fanInstallHeight, 2)],
+                ["Потери в обвязке вентилятора, Па", fmt(calc.summary.networkLoss, 0)],
+                ["Давление на верхнем расчетном этаже, Па", fmt(calc.summary.lastPs, 2)],
+                ["Массовый расход вентилятора подпора в ЛК, кг/с", fmt(calc.summary.lastGs, 3)],
+                ["Давление вентилятора, Па", fmt(calc.summary.fanPressure, 2)]
+              ]
+            }
+          ]
+        };
+      }
+
+      function exportPdf() {
+        var report = buildReportState();
+        if (!report) return;
+        setStatus("Формирование PDF...", "loading");
+        ensurePdfLibs().then(function (pdfMakeLib) {
+          var headerLogoUrl = "https://optim.tildacdn.com/tild3933-6438-4633-b733-306266393934/-/resize/500x/-/format/webp/logo_mail.png.webp";
+          var headerSiteText = "osnovaprof.ru";
+          var headerRightText = "FireVent Calc © v.2.2.1.1 2018-2025 osnova@osnovaprof.ru";
+          function loadLogo() {
+            return fetch(headerLogoUrl).then(function (response) {
+              if (!response.ok) throw new Error("Logo fetch failed");
+              return response.blob();
+            }).then(function (blob) {
+              return new Promise(function (resolve) {
+                var url = URL.createObjectURL(blob);
+                var img = new Image();
+                img.crossOrigin = "anonymous";
+                img.onload = function () {
+                  try {
+                    var canvas = document.createElement("canvas");
+                    canvas.width = img.naturalWidth;
+                    canvas.height = img.naturalHeight;
+                    var ctx = canvas.getContext("2d");
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0);
+                    resolve(canvas.toDataURL("image/png"));
+                  } catch (err) {
+                    resolve(null);
+                  } finally {
+                    URL.revokeObjectURL(url);
+                  }
+                };
+                img.onerror = function () {
+                  resolve(null);
+                  URL.revokeObjectURL(url);
+                };
+                img.src = url;
+              });
+            }).catch(function () {
+              return null;
+            });
+          }
+          function buildTableBody(section) {
+            var body = [];
+            body.push((section.type === "pairs" ? ["Показатель", "Значение"] : section.headers).map(function (cell) {
+              return { text: String(cell), style: "tableHeader", alignment: "center" };
+            }));
+            section.rows.forEach(function (row) {
+              body.push(row.map(function (cell) {
+                return { text: String(cell == null ? "" : cell), style: "tableCell" };
+              }));
+            });
+            return body;
+          }
+          function buildSectionBlock(section) {
+            var isWideSection = /^3\./.test(section.title);
+            var widths = section.type === "pairs" ? [330, "*"] : Array(section.headers.length).fill("*");
+            if (section.title.indexOf("3. Поэтажный расчет") === 0) {
+              widths = [56, 86, 84, 84, 84, 84];
+            }
+            var block = [
+              { text: section.title, style: "sectionTitle", margin: [0, 10, 0, 6], pageOrientation: isWideSection ? "landscape" : "portrait", pageBreak: isWideSection ? "before" : undefined },
+              {
+                table: {
+                  headerRows: 1,
+                  widths: widths,
+                  body: buildTableBody(section)
+                },
+                fontSize: isWideSection ? 9 : undefined,
+                layout: {
+                  hLineWidth: function () { return 0.7; },
+                  vLineWidth: function () { return 0.7; },
+                  hLineColor: function () { return "#7b8794"; },
+                  vLineColor: function () { return "#7b8794"; },
+                  paddingLeft: function () { return isWideSection ? 4 : 6; },
+                  paddingRight: function () { return isWideSection ? 4 : 6; },
+                  paddingTop: function () { return isWideSection ? 4 : 5; },
+                  paddingBottom: function () { return isWideSection ? 4 : 5; }
+                },
+                pageOrientation: isWideSection ? "landscape" : "portrait"
+              }
+            ];
+            if (section.method && section.method.items && section.method.items.length) {
+              block.push({ text: section.method.title, style: "methodTitle", margin: [0, 10, 0, 6] });
+              section.method.items.forEach(function (item) {
+                block.push({ text: item.name, style: "methodName", margin: [0, 0, 0, 4] });
+                block.push({ text: item.formula, style: "methodFormula", alignment: "center", margin: [0, 0, 0, 6] });
+                (item.details || []).forEach(function (detail) {
+                  block.push({ text: detail, style: "methodText", margin: [0, 0, 0, 2] });
+                });
+                block.push({ text: "Подстановка значений в формулы:", style: "methodName", margin: [0, 4, 0, 2] });
+                if (item.substitute && typeof item.substitute === "object") {
+                  block.push({ text: item.substitute.expression, style: "methodText", margin: [0, 0, 0, 2] });
+                  block.push({ text: item.substitute.result, style: "methodText", margin: [0, 0, 0, 8] });
+                } else {
+                  block.push({ text: item.substitute, style: "methodText", margin: [0, 0, 0, 8] });
+                }
+              });
+            }
+            return block;
+          }
+          return loadLogo().then(function (logoInfo) {
+            function buildHeaderColumns() {
+              var columns = [];
+              if (logoInfo) columns.push({ width: 76, image: logoInfo, fit: [76, 26] });
+              else columns.push({ width: 76, text: "" });
+              columns.push({ width: 120, text: headerSiteText, style: "headerLeft", margin: [8, 5, 0, 0] });
+              columns.push({ width: "*", text: headerRightText, style: "headerRight", margin: [0, 5, 0, 0] });
+              return columns;
+            }
+            var content = [
+              { text: report.title, style: "reportTitle", alignment: "center", margin: [0, 0, 0, 10] },
+              { text: "Объект: " + report.objectName, style: "metaBold", margin: [0, 0, 0, 4] },
+              { text: "Дата и время создания: " + report.createdAt, style: "meta", margin: [0, 0, 0, 10] }
+            ];
+            report.sections.forEach(function (section) {
+              buildSectionBlock(section).forEach(function (node) { content.push(node); });
+            });
+            var docDefinition = {
+              pageSize: "A4",
+              pageMargins: [32, 62, 32, 42],
+              defaultStyle: { font: "Roboto", fontSize: 11, color: "#111111" },
+              header: function () {
+                return {
+                  margin: [32, 14, 32, 0],
+                  stack: [
+                    { columns: buildHeaderColumns() },
+                    { canvas: [{ type: "line", x1: 0, y1: 8, x2: 531, y2: 8, lineWidth: 0.8, lineColor: "#d2d7df" }] }
+                  ]
+                };
+              },
+              footer: function (currentPage, pageCount) {
+                return {
+                  margin: [32, 0, 32, 8],
+                  stack: [
+                    { canvas: [{ type: "line", x1: 0, y1: 0, x2: 531, y2: 0, lineWidth: 0.8, lineColor: "#d2d7df" }] },
+                    { text: String(currentPage) + "-" + String(pageCount), alignment: "center", margin: [0, 4, 0, 0], fontSize: 11 }
+                  ]
+                };
+              },
+              styles: {
+                reportTitle: { fontSize: 18, bold: true },
+                metaBold: { fontSize: 11, bold: true },
+                meta: { fontSize: 10, color: "#555555" },
+                sectionTitle: { fontSize: 15, bold: true },
+                tableHeader: { fontSize: 11, bold: true, fillColor: "#EEEEEE", color: "#111111" },
+                tableCell: { fontSize: 11, color: "#111111" },
+                methodTitle: { fontSize: 12, bold: true },
+                methodName: { fontSize: 11, bold: true },
+                methodFormula: { fontSize: 11, bold: true },
+                methodText: { fontSize: 11 },
+                headerLeft: { fontSize: 11 },
+                headerRight: { fontSize: 10, bold: true, alignment: "right" }
+              },
+              content: content
+            };
+            pdfMakeLib.createPdf(docDefinition).download(fileSafeName(report.objectName || "raschet_lk_bez_vestibyulya") + ".pdf");
+            setStatus("PDF сформирован.", "");
+          });
+        }).catch(function (err) {
+          console.error(err);
+          setStatus("Не удалось сформировать PDF: " + (err && err.message ? err.message : "неизвестная ошибка"), "error");
+        });
+      }
+
+      function exportDocx() {
+        var report = buildReportState();
+        if (!report) return;
+        setStatus("Формирование DOCX...", "loading");
+        ensureDocxLibs().then(function () {
+          var d = window.docx;
+          var border = { style: d.BorderStyle.SINGLE, size: 4, color: "6F7780" };
+          var headerLogoUrl = "https://optim.tildacdn.com/tild3933-6438-4633-b733-306266393934/-/resize/500x/-/format/webp/logo_mail.png.webp";
+          var headerSiteText = "osnovaprof.ru";
+          var headerProgramText = "FireVent Calc © v.2.2.1.1";
+          var headerContactText = "2018-2025 osnova@osnovaprof.ru";
+          function paragraph(text, bold, align, color, spacingAfter) {
+            return new d.Paragraph({
+              alignment: align || d.AlignmentType.LEFT,
+              spacing: { after: spacingAfter == null ? 120 : spacingAfter },
+              children: [new d.TextRun({
+                text: String(text == null ? "" : text),
+                bold: !!bold,
+                font: "Cambria",
+                size: 22,
+                color: color || "111111"
+              })]
+            });
+          }
+          function spacerParagraph() {
+            return new d.Paragraph({
+              spacing: { after: 120 },
+              children: [new d.TextRun({ text: "", font: "Cambria", size: 22 })]
+            });
+          }
+          function methodParagraph(text, bold) {
+            return new d.Paragraph({
+              spacing: { after: 80 },
+              children: [new d.TextRun({
+                text: String(text == null ? "" : text),
+                bold: !!bold,
+                font: "Cambria",
+                size: 20,
+                color: "111111"
+              })]
+            });
+          }
+          function methodFormulaParagraph(text) {
+            return new d.Paragraph({
+              alignment: d.AlignmentType.CENTER,
+              spacing: { after: 80 },
+              children: [new d.TextRun({
+                text: String(text == null ? "" : text),
+                bold: true,
+                font: "Cambria",
+                size: 20,
+                color: "111111"
+              })]
+            });
+          }
+          function tableFromSection(section) {
+            var rows = [];
+            rows.push(new d.TableRow({
+              tableHeader: true,
+              children: section.headers.map(function (header) {
+                return new d.TableCell({
+                  shading: { fill: "EEEEEE", type: d.ShadingType.CLEAR, color: "auto" },
+                  borders: { top: border, bottom: border, left: border, right: border },
+                  children: [paragraph(header, true, d.AlignmentType.CENTER)]
+                });
+              })
+            }));
+            section.rows.forEach(function (row) {
+              rows.push(new d.TableRow({
+                children: row.map(function (cell) {
+                  return new d.TableCell({
+                    borders: { top: border, bottom: border, left: border, right: border },
+                    children: [paragraph(cell, false)]
+                  });
+                })
+              }));
+            });
+            return new d.Table({
+              width: { size: 100, type: d.WidthType.PERCENTAGE },
+              rows: rows
+            });
+          }
+          function buildDocHeader(logoInfo) {
+            var noBorder = {
+              top: { style: d.BorderStyle.NONE, size: 0, color: "FFFFFF" },
+              bottom: { style: d.BorderStyle.NONE, size: 0, color: "FFFFFF" },
+              left: { style: d.BorderStyle.NONE, size: 0, color: "FFFFFF" },
+              right: { style: d.BorderStyle.NONE, size: 0, color: "FFFFFF" }
+            };
+            var logoChildren = [new d.Paragraph({
+              spacing: { after: 0 },
+              children: logoInfo ? [new d.ImageRun({
+                data: logoInfo.data,
+                transformation: { width: logoInfo.width, height: logoInfo.height }
+              })] : []
+            })];
+            return new d.Header({
+              children: [
+                new d.Table({
+                  width: { size: 100, type: d.WidthType.PERCENTAGE },
+                  borders: {
+                    top: noBorder.top,
+                    bottom: noBorder.bottom,
+                    left: noBorder.left,
+                    right: noBorder.right,
+                    insideHorizontal: { style: d.BorderStyle.NONE, size: 0, color: "FFFFFF" },
+                    insideVertical: { style: d.BorderStyle.NONE, size: 0, color: "FFFFFF" }
+                  },
+                  rows: [new d.TableRow({
+                    children: [
+                      new d.TableCell({
+                        width: { size: 24, type: d.WidthType.PERCENTAGE },
+                        verticalAlign: d.VerticalAlign.CENTER,
+                        borders: noBorder,
+                        children: logoChildren
+                      }),
+                      new d.TableCell({
+                        width: { size: 26, type: d.WidthType.PERCENTAGE },
+                        verticalAlign: d.VerticalAlign.CENTER,
+                        borders: noBorder,
+                        children: [new d.Paragraph({
+                          spacing: { after: 0 },
+                          children: [new d.TextRun({
+                            text: headerSiteText,
+                            font: "Cambria",
+                            size: 18,
+                            color: "111111"
+                          })]
+                        })]
+                      }),
+                      new d.TableCell({
+                        width: { size: 50, type: d.WidthType.PERCENTAGE },
+                        verticalAlign: d.VerticalAlign.CENTER,
+                        borders: noBorder,
+                        children: [new d.Paragraph({
+                          alignment: d.AlignmentType.RIGHT,
+                          spacing: { after: 0 },
+                          children: [new d.TextRun({
+                            text: headerProgramText + " " + headerContactText,
+                            font: "Cambria",
+                            size: 18,
+                            bold: true,
+                            color: "111111"
+                          })]
+                        })]
+                      })
+                    ]
+                  })]
+                })
+              ]
+            });
+          }
+          function buildDocFooter() {
+            return new d.Footer({
+              children: [new d.Paragraph({
+                alignment: d.AlignmentType.CENTER,
+                spacing: { after: 0 },
+                children: [new d.TextRun({
+                  font: "Cambria",
+                  size: 18,
+                  color: "111111",
+                  children: [d.PageNumber.CURRENT, "-", d.PageNumber.TOTAL_PAGES]
+                })]
+              })]
+            });
+          }
+          function resolveLogoInfo(data) {
+            if (!data) return Promise.resolve(null);
+            return new Promise(function (resolve) {
+              try {
+                var blob = new Blob([data], { type: "image/webp" });
+                var url = URL.createObjectURL(blob);
+                var img = new Image();
+                img.onload = function () {
+                  var maxWidth = 230;
+                  var maxHeight = 58;
+                  var scale = Math.min(maxWidth / img.naturalWidth, maxHeight / img.naturalHeight, 1);
+                  resolve({
+                    data: data,
+                    width: Math.max(1, Math.round(img.naturalWidth * scale)),
+                    height: Math.max(1, Math.round(img.naturalHeight * scale))
+                  });
+                  URL.revokeObjectURL(url);
+                };
+                img.onerror = function () {
+                  resolve({ data: data, width: 170, height: 42 });
+                  URL.revokeObjectURL(url);
+                };
+                img.src = url;
+              } catch (err) {
+                resolve({ data: data, width: 170, height: 42 });
+              }
+            });
+          }
+          var children = [
+            paragraph(report.title, true, d.AlignmentType.CENTER),
+            paragraph("Объект: " + report.objectName, true),
+            paragraph("Дата и время создания: " + report.createdAt, false, d.AlignmentType.LEFT, "555555"),
+            spacerParagraph()
+          ];
+          report.sections.forEach(function (section) {
+            children.push(paragraph(section.title, true));
+            if (section.type === "pairs") {
+              children.push(tableFromSection({ headers: ["Показатель", "Значение"], rows: section.rows }));
+            } else {
+              children.push(tableFromSection(section));
+            }
+            if (section.method && section.method.items && section.method.items.length) {
+              children.push(methodParagraph(section.method.title, true));
+              section.method.items.forEach(function (item) {
+                children.push(methodParagraph(item.name, true));
+                children.push(methodFormulaParagraph(item.formula));
+                (item.details || []).forEach(function (detail) {
+                  children.push(methodParagraph(detail, false));
+                });
+                children.push(methodParagraph("Подстановка значений в формулы:", true));
+                if (item.substitute && typeof item.substitute === "object") {
+                  children.push(methodParagraph(item.substitute.expression, false));
+                  children.push(methodParagraph(item.substitute.result, false));
+                } else {
+                  children.push(methodParagraph(item.substitute, false));
+                }
+                children.push(methodParagraph("", false));
+              });
+            }
+            children.push(spacerParagraph());
+          });
+          return fetch(headerLogoUrl).then(function (response) {
+            if (!response.ok) throw new Error("Logo fetch failed");
+            return response.arrayBuffer();
+          }).then(function (buffer) {
+            return new Uint8Array(buffer);
+          }).catch(function () {
+            return null;
+          }).then(function (logoData) {
+            return resolveLogoInfo(logoData);
+          }).then(function (logoInfo) {
+            var doc = new d.Document({
+              sections: [{
+                properties: { page: { margin: { top: 1440, right: 720, bottom: 720, left: 720 } } },
+                headers: { default: buildDocHeader(logoInfo) },
+                footers: { default: buildDocFooter() },
+                children: children
+              }]
+            });
+            return d.Packer.toBlob(doc);
+          }).then(function (blob) {
+            downloadBlob(blob, fileSafeName(report.objectName || "raschet_lk_bez_vestibyulya") + ".docx");
+            setStatus("DOCX сформирован.", "");
+          });
+        }).catch(function (err) {
+          console.error(err);
+          setStatus("Не удалось сформировать DOCX.", "error");
+        });
+      }
+
+      function requestCalculation() {
+        try {
+          var payload = buildPayload();
+          var validationError = validateInputs(payload.inputs);
+          if (validationError) {
+            clearSummary();
+            setStatus(validationError, "error");
+            return;
+          }
+          var requestId = ++state.calcRequestSeq;
+          if (state.currentController) state.currentController.abort();
+          state.currentController = window.AbortController ? new AbortController() : null;
+          setStatus("Ведется расчет...", "loading");
+          fetch(WEBHOOK_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+            signal: state.currentController ? state.currentController.signal : undefined
+          }).then(function (response) {
+            if (!response.ok) throw new Error("HTTP " + response.status);
+            return response.json();
+          }).then(function (data) {
+            if (requestId !== state.calcRequestSeq) return;
+            state.calc = normalizeResponse(data);
+            render(state.calc);
+            setStatus(
+              data.statusMessage || ("Расчет обновлен: " + new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit", second: "2-digit" })),
+              data.statusIsError ? "error" : ""
+            );
+          }).catch(function (err) {
+            if (err && err.name === "AbortError") return;
+            console.error(err);
+            clearSummary();
+            setStatus("Расчетный сервер недоступен, попробуйте повторить позже.", "error");
+          });
+        } catch (err) {
+          console.error(err);
+          clearSummary();
+          setStatus("Ошибка подготовки исходных данных.", "error");
+        }
+      }
+
+      function scheduleCalculation() {
+        clearTimeout(state.debounceTimer);
+        state.debounceTimer = setTimeout(requestCalculation, 250);
+      }
+
+      function initClimate() {
+        state.cityData = CITY_DATA.map(function (row) {
+          return { city: row[0], cold: row[1], wind: row[2], warm: row[3] };
+        });
+        state.climateMap = {};
+        state.cityData.forEach(function (item) {
+          state.climateMap[normalizeCityName(item.city)] = item;
+        });
+        if (!els.city.value.trim()) els.city.value = DEFAULT_CITY.city;
+      }
+
+      Array.prototype.forEach.call(document.querySelectorAll("input, select"), function (el) {
+        if (el.id === "reportFormat") return;
+        el.addEventListener("input", scheduleCalculation);
+        el.addEventListener("change", scheduleCalculation);
+      });
+
+      els.exportReportBtn.addEventListener("click", function () {
+        if (!state.calc) {
+          setStatus("Сначала дождитесь расчета.", "error");
+          return;
+        }
+        if (els.reportFormat.value === "pdf") exportPdf();
+        else exportDocx();
+      });
+
+      bindNumericFormatting();
+      bindCityAutocomplete();
+      initClimate();
+      requestCalculation();
+    })();
+  </script>
+</body>
+</html>
